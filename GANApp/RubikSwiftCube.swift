@@ -447,7 +447,7 @@ extension Face: CustomStringConvertible {
     }
 }
 
-// MARK: - Moves
+// MARK: - Moves -
 
 public prefix func !(orientation: EdgePiece.Orientation) -> EdgePiece.Orientation {
     switch orientation {
@@ -457,11 +457,11 @@ public prefix func !(orientation: EdgePiece.Orientation) -> EdgePiece.Orientatio
 }
 
 extension EdgePiece {
-    mutating func flip() {
+    fileprivate mutating func flip() {
         self.orientation = !self.orientation
     }
 
-    var flipped: EdgePiece {
+    fileprivate var flipped: EdgePiece {
         var piece = self
         piece.flip()
 
@@ -508,7 +508,7 @@ public struct Move {
 
         fileprivate static let all: [Magnitude] = [.clockwiseQuarterTurn, .halfTurn, .counterClockwiseQuarterTurn]
 
-        fileprivate var opposite: Magnitude {
+        fileprivate var inverse: Magnitude {
             switch self {
             case .clockwiseQuarterTurn: return .counterClockwiseQuarterTurn
             case .counterClockwiseQuarterTurn: return .clockwiseQuarterTurn
@@ -520,8 +520,8 @@ public struct Move {
     public let face: Face
     public let magnitude: Magnitude
 
-    public var opposite: Move {
-        return Move(face: self.face, magnitude: self.magnitude.opposite)
+    public var inverse: Move {
+        return Move(face: self.face, magnitude: self.magnitude.inverse)
     }
 }
 
@@ -713,19 +713,13 @@ extension Move {
 }
 
 extension Collection where Iterator.Element == Move {
-    public var opposite: [Move] {
-        return self.reversed().map { $0.opposite }
+    public var inverse: [Move] {
+        return self.reversed().map { $0.inverse }
     }
 }
 
 extension Move: CustomStringConvertible {
     public var description: String {
         return "\(self.face)\(self.magnitude)"
-    }
-}
-
-extension Collection where Iterator.Element == Move {
-    public var sequenceString: String {
-        return self.map { $0.description }.joined(separator: " ")
     }
 }
