@@ -203,11 +203,13 @@ extension Cube {
         }
 
         for (index, edgeLocation) in edgeLocations.enumerated() {
-            rotatedPieces.edges[edgeLocations[wrapping: index + 1]] = self.pieces.edges[edgeLocation]
+            let location = edgeLocations[(index + 1) % edgeLocations.count]
+            rotatedPieces.edges[location] = self.pieces.edges[edgeLocation]
         }
 
         for (index, cornerLocation) in cornerLocations.enumerated() {
-            rotatedPieces.corners[cornerLocations[wrapping: index + 1]] = self.pieces.corners[cornerLocation]
+            let location = cornerLocations[(index + 1) % cornerLocations.count]
+            rotatedPieces.corners[location] = self.pieces.corners[cornerLocation]
         }
 
         self.pieces = rotatedPieces
