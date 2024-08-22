@@ -796,17 +796,15 @@ extension GANFacelets {
         // GAN uses Kociemba's representation, and so does our Cube type,
         // so this is more or less a 1:1 mapping.
 
-        let cornerLocationMap = CornerLocation.allCases
-        for (corner, (permutation, orientation)) in zip(cornerLocationMap, zip(cp, co)) {
-            cube.pieces.corners[corner] = CornerPiece(
+        for (corner, (permutation, orientation)) in zip(CornerLocation.allCases, zip(cp, co)) {
+            cube.corners[corner] = CornerPiece(
                 CornerLocation(rawValue: Int(permutation))!,
                 orientation: CornerPiece.Orientation(rawValue: Int(orientation))!
             )
         }
 
-        let edgeLocationMap = EdgeLocation.allCases
-        for (edge, (permutation, orientation)) in zip(edgeLocationMap, zip(ep, eo)) {
-            cube.pieces.edges[edge] = EdgePiece(
+        for (edge, (permutation, orientation)) in zip(EdgeLocation.allCases, zip(ep, eo)) {
+            cube.edges[edge] = EdgePiece(
                 EdgeLocation(rawValue: Int(permutation))!,
                 orientation: EdgePiece.Orientation(rawValue: Int(orientation))!
             )

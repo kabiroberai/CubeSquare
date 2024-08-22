@@ -52,9 +52,6 @@ import Testing
     )
     let cubeState = facelets.cube()
 
-    let fr = Cube().applying([
-        Move(face: .front, magnitude: .clockwiseQuarterTurn),
-        Move(face: .right, magnitude: .clockwiseQuarterTurn),
-    ])
+    let fr = Cube().applying([Move(face: .front), Move(face: .right)])
     #expect(cubeState == fr)
 }

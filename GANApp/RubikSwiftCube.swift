@@ -137,6 +137,21 @@ public struct EdgePieceCollection: Equatable {
     public var all: [EdgePiece] {
         EdgeLocation.allCases.map { self[$0] }
     }
+
+    public static let solved = EdgePieceCollection(
+        topRight: EdgePiece(.topRight),
+        topFront: EdgePiece(.topFront),
+        topLeft: EdgePiece(.topLeft),
+        topBack: EdgePiece(.topBack),
+        bottomRight: EdgePiece(.bottomRight),
+        bottomFront: EdgePiece(.bottomFront),
+        bottomLeft: EdgePiece(.bottomLeft),
+        bottomBack: EdgePiece(.bottomBack),
+        middleRightFront: EdgePiece(.middleRightFront),
+        middleLeftFront: EdgePiece(.middleLeftFront),
+        middleLeftBack: EdgePiece(.middleLeftBack),
+        middleRightBack: EdgePiece(.middleRightBack)
+    )
 }
 
 public struct CornerPieceCollection: Equatable {
@@ -168,48 +183,31 @@ public struct CornerPieceCollection: Equatable {
     public var all: [CornerPiece] {
         CornerLocation.allCases.map { self[$0] }
     }
+
+    public static let solved = CornerPieceCollection(
+        topRightFront: CornerPiece(.topRightFront),
+        topLeftFront: CornerPiece(.topLeftFront),
+        topLeftBack: CornerPiece(.topLeftBack),
+        topRightBack: CornerPiece(.topRightBack),
+        bottomRightFront: CornerPiece(.bottomRightFront),
+        bottomLeftFront: CornerPiece(.bottomLeftFront),
+        bottomLeftBack: CornerPiece(.bottomLeftBack),
+        bottomRightBack: CornerPiece(.bottomRightBack)
+    )
 }
 
 public struct Cube: Equatable {
-    public struct Pieces: Equatable {
-        fileprivate static let numberOfEdges = EdgeLocation.allCases.count
-        fileprivate static let numberOfCorners = CornerLocation.allCases.count
-
-        public var edges: EdgePieceCollection
-        public var corners: CornerPieceCollection
-    }
-
-    public var pieces: Pieces
+    public var edges: EdgePieceCollection
+    public var corners: CornerPieceCollection
 
     public static let solved = Cube()
 
-    public init() {
-        self.pieces = Pieces(
-            edges: EdgePieceCollection(
-                topRight: EdgePiece(.topRight),
-                topFront: EdgePiece(.topFront),
-                topLeft: EdgePiece(.topLeft),
-                topBack: EdgePiece(.topBack),
-                bottomRight: EdgePiece(.bottomRight),
-                bottomFront: EdgePiece(.bottomFront),
-                bottomLeft: EdgePiece(.bottomLeft),
-                bottomBack: EdgePiece(.bottomBack),
-                middleRightFront: EdgePiece(.middleRightFront),
-                middleLeftFront: EdgePiece(.middleLeftFront),
-                middleLeftBack: EdgePiece(.middleLeftBack),
-                middleRightBack: EdgePiece(.middleRightBack)
-            ),
-            corners: CornerPieceCollection(
-                topRightFront: CornerPiece(.topRightFront),
-                topLeftFront: CornerPiece(.topLeftFront),
-                topLeftBack: CornerPiece(.topLeftBack),
-                topRightBack: CornerPiece(.topRightBack),
-                bottomRightFront: CornerPiece(.bottomRightFront),
-                bottomLeftFront: CornerPiece(.bottomLeftFront),
-                bottomLeftBack: CornerPiece(.bottomLeftBack),
-                bottomRightBack: CornerPiece(.bottomRightBack)
-            )
-        )
+    public init(
+        edges: EdgePieceCollection = .solved,
+        corners: CornerPieceCollection = .solved
+    ) {
+        self.edges = edges
+        self.corners = corners
     }
 
     public init(applyingToSolvedCube moves: [Move]) {
@@ -218,8 +216,6 @@ public struct Cube: Equatable {
 }
 
 extension EdgeLocation {
-    fileprivate static let all = Set(EdgeLocation.allCases)
-
     // Sorted clockwise
     fileprivate static func locations(in face: Face) -> [EdgeLocation] {
         switch face {
@@ -234,8 +230,6 @@ extension EdgeLocation {
 }
 
 extension CornerLocation {
-    fileprivate static let all = Set(CornerLocation.allCases)
-
     // Sorted clockwise
     fileprivate static func locations(in face: Face) -> [CornerLocation] {
         switch face {
@@ -358,8 +352,13 @@ public struct Move {
         }
     }
 
-    public let face: Face
-    public let magnitude: Magnitude
+    public var face: Face
+    public var magnitude: Magnitude
+
+    public init(face: Face, magnitude: Magnitude = .clockwiseQuarterTurn) {
+        self.face = face
+        self.magnitude = magnitude
+    }
 
     public var inverse: Move {
         return Move(face: self.face, magnitude: self.magnitude.inverse)
@@ -456,11 +455,11 @@ extension Cube {
 
 extension Cube {
     fileprivate mutating func flipEdges(in face: Face) {
-        self.pieces.edges.map(face) { $1.flipped }
+        self.edges.map(face) { $1.flipped }
     }
 
     fileprivate mutating func rotateCorners(in face: Face) {
-        self.pieces.corners.map(face) { (location: CornerLocation, corner: CornerPiece) -> CornerPiece in
+        self.corners.map(face) { (location: CornerLocation, corner: CornerPiece) -> CornerPiece in
             let rotation = face.cornerOrientationChangeAfterClockwiseTurn(in: location)
 
             return corner + rotation
@@ -468,7 +467,7 @@ extension Cube {
     }
 
     fileprivate mutating func permutatePieces(in face: Face, clockwise: Bool) {
-        var rotatedPieces = self.pieces
+        var rotated = self
 
         // This relies on the fact that the locations are returned in clockwise order
         var edgeLocations = EdgeLocation.locations(in: face)
@@ -481,15 +480,15 @@ extension Cube {
 
         for (index, edgeLocation) in edgeLocations.enumerated() {
             let location = edgeLocations[(index + 1) % edgeLocations.count]
-            rotatedPieces.edges[location] = self.pieces.edges[edgeLocation]
+            rotated.edges[location] = self.edges[edgeLocation]
         }
 
         for (index, cornerLocation) in cornerLocations.enumerated() {
             let location = cornerLocations[(index + 1) % cornerLocations.count]
-            rotatedPieces.corners[location] = self.pieces.corners[cornerLocation]
+            rotated.corners[location] = self.corners[cornerLocation]
         }
 
-        self.pieces = rotatedPieces
+        self = rotated
     }
 }
 
