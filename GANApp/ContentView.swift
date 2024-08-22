@@ -126,12 +126,12 @@ struct CubeView: View {
     @State private var startTime: Date?
 
     var isSolved: Bool {
-        cubeVM.rsCube == .unscrambledCube
+        cubeVM.rsCube == .solved
     }
 
     var body: some View {
         VStack {
-            Text("Solved: \(cubeVM.rsCube == .unscrambledCube)")
+            Text("Solved: \(cubeVM.rsCube == .solved)")
 
             if let batteryLevel = cubeVM.batteryLevel {
                 Text("Battery: \(batteryLevel)%")

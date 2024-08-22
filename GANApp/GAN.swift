@@ -290,16 +290,16 @@ struct GANGen2Serializer: GANSerializer {
                 cp.append(event.readU8(bitOffset: 12 + i * 3, bitCount: 3))
                 co.append(event.readU8(bitOffset: 33 + i * 2, bitCount: 2))
             }
-            cp.append(28 - cp.reduce(0, +))
-            co.append((3 - (co.reduce(0, +) % 3)) % 3)
+            cp.append(28 - cp.sum())
+            co.append((3 - (co.sum() % 3)) % 3)
 
             // edges
             for i in 0..<11 {
                 ep.append(event.readU8(bitOffset: 47 + i * 4, bitCount: 4))
                 eo.append(event.readU8(bitOffset: 91 + i * 1, bitCount: 1))
             }
-            ep.append(66 - ep.reduce(0, +))
-            eo.append((2 - (eo.reduce(0, +) % 2)) % 2)
+            ep.append(66 - ep.sum())
+            eo.append((2 - (eo.sum() % 2)) % 2)
 
             events.append(.facelets(
                 .init(cp: cp, co: co, ep: ep, eo: eo, serial: serial)
@@ -780,5 +780,38 @@ extension CBManagerState {
         case .unauthorized, .unsupported, .poweredOn, .poweredOff: true
         @unknown default: true
         }
+    }
+}
+
+extension Sequence where Element: AdditiveArithmetic {
+    fileprivate func sum() -> Element {
+        reduce(.zero, +)
+    }
+}
+
+extension GANFacelets {
+    func cube() -> Cube {
+        var cube = Cube()
+
+        // GAN uses Kociemba's representation, and so does our Cube type,
+        // so this is more or less a 1:1 mapping.
+
+        let cornerLocationMap = CornerLocation.allCases
+        for (corner, (permutation, orientation)) in zip(cornerLocationMap, zip(cp, co)) {
+            cube.pieces.corners[corner] = CornerPiece(
+                CornerLocation(rawValue: Int(permutation))!,
+                orientation: CornerPiece.Orientation(rawValue: Int(orientation))!
+            )
+        }
+
+        let edgeLocationMap = EdgeLocation.allCases
+        for (edge, (permutation, orientation)) in zip(edgeLocationMap, zip(ep, eo)) {
+            cube.pieces.edges[edge] = EdgePiece(
+                EdgeLocation(rawValue: Int(permutation))!,
+                orientation: EdgePiece.Orientation(rawValue: Int(orientation))!
+            )
+        }
+
+        return cube
     }
 }

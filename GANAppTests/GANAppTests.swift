@@ -29,3 +29,32 @@ import Testing
     try cryptor.decrypt(&data)
     #expect(data == original)
 }
+
+@Test func solvedFaceletsCube() async throws {
+    let facelets = GANFacelets(
+        cp: [0, 1, 2, 3, 4, 5, 6, 7],
+        co: [0, 0, 0, 0, 0, 0, 0, 0],
+        ep: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        serial: 0
+    )
+    let cube = facelets.cube()
+    #expect(cube == Cube())
+}
+
+@Test func turnedFaceletsCube() async throws {
+    let facelets = GANFacelets(
+        cp: [0, 5, 2, 1, 7, 4, 6, 3],
+        co: [1, 2, 0, 2, 1, 1, 0, 2],
+        ep: [1, 9, 2, 3, 11, 8, 6, 7, 4, 5, 10, 0],
+        eo: [1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+        serial: 0
+    )
+    let cubeState = facelets.cube()
+
+    let fr = Cube().applying([
+        Move(face: .front, magnitude: .clockwiseQuarterTurn),
+        Move(face: .right, magnitude: .clockwiseQuarterTurn),
+    ])
+    #expect(cubeState == fr)
+}

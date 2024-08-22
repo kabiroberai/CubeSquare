@@ -8,23 +8,40 @@
 
 // https://github.com/JaviSoto/RubikSwift
 
-public enum EdgeLocation {
+public enum EdgeLocation: Int, CaseIterable {
     case topRight
     case topFront
     case topLeft
     case topBack
-    case middleRightFront
-    case middleLeftFront
-    case middleLeftBack
-    case middleRightBack
     case bottomRight
     case bottomFront
     case bottomLeft
     case bottomBack
+    case middleRightFront
+    case middleLeftFront
+    case middleLeftBack
+    case middleRightBack
+
+    public var keyPath: WritableKeyPath<EdgePieceCollection, EdgePiece> {
+        switch self {
+        case .topRight: \.topRight
+        case .topFront: \.topFront
+        case .topLeft: \.topLeft
+        case .topBack: \.topBack
+        case .middleRightFront: \.middleRightFront
+        case .middleLeftFront: \.middleLeftFront
+        case .middleLeftBack: \.middleLeftBack
+        case .middleRightBack: \.middleRightBack
+        case .bottomRight: \.bottomRight
+        case .bottomFront: \.bottomFront
+        case .bottomLeft: \.bottomLeft
+        case .bottomBack: \.bottomBack
+        }
+    }
 }
 
-public struct EdgePiece {
-    public enum Orientation {
+public struct EdgePiece: Equatable {
+    public enum Orientation: Int, CaseIterable {
         case correct
         case flipped
     }
@@ -32,13 +49,13 @@ public struct EdgePiece {
     public var location: EdgeLocation
     public var orientation: Orientation
 
-    fileprivate init(_ location: EdgeLocation, orientation: Orientation = .correct) {
+    public init(_ location: EdgeLocation, orientation: Orientation = .correct) {
         self.location = location
         self.orientation = orientation
     }
 }
 
-public enum CornerLocation {
+public enum CornerLocation: Int, CaseIterable {
     case topRightFront
     case topLeftFront
     case topLeftBack
@@ -47,10 +64,23 @@ public enum CornerLocation {
     case bottomLeftFront
     case bottomLeftBack
     case bottomRightBack
+
+    public var keyPath: WritableKeyPath<CornerPieceCollection, CornerPiece> {
+        switch self {
+        case .topRightFront: \.topRightFront
+        case .topLeftFront: \.topLeftFront
+        case .topLeftBack: \.topLeftBack
+        case .topRightBack: \.topRightBack
+        case .bottomRightFront: \.bottomRightFront
+        case .bottomLeftFront: \.bottomLeftFront
+        case .bottomLeftBack: \.bottomLeftBack
+        case .bottomRightBack: \.bottomRightBack
+        }
+    }
 }
 
-public struct CornerPiece {
-    public enum Orientation {
+public struct CornerPiece: Equatable {
+    public enum Orientation: Int, CaseIterable {
         case correct
         case rotatedClockwise
         case rotatedCounterClockwise
@@ -65,64 +95,32 @@ public struct CornerPiece {
     }
 }
 
-public enum Face {
+public enum Face: CaseIterable {
     case top
     case bottom
     case left
     case right
     case front
     case back
-
-    fileprivate static let all: [Face] = [.top, .bottom, .left, .right, .front, .back]
 }
 
-public struct EdgePieceCollection {
-    fileprivate var topRight: EdgePiece
-    fileprivate var topFront: EdgePiece
-    fileprivate var topLeft: EdgePiece
-    fileprivate var topBack: EdgePiece
-    fileprivate var middleRightFront: EdgePiece
-    fileprivate var middleLeftFront: EdgePiece
-    fileprivate var middleLeftBack: EdgePiece
-    fileprivate var middleRightBack: EdgePiece
-    fileprivate var bottomRight: EdgePiece
-    fileprivate var bottomFront: EdgePiece
-    fileprivate var bottomLeft: EdgePiece
-    fileprivate var bottomBack: EdgePiece
+public struct EdgePieceCollection: Equatable {
+    public var topRight: EdgePiece
+    public var topFront: EdgePiece
+    public var topLeft: EdgePiece
+    public var topBack: EdgePiece
+    public var bottomRight: EdgePiece
+    public var bottomFront: EdgePiece
+    public var bottomLeft: EdgePiece
+    public var bottomBack: EdgePiece
+    public var middleRightFront: EdgePiece
+    public var middleLeftFront: EdgePiece
+    public var middleLeftBack: EdgePiece
+    public var middleRightBack: EdgePiece
 
-    fileprivate subscript(location: EdgeLocation) -> EdgePiece {
-        get {
-            switch location {
-            case .topRight: return self.topRight
-            case .topFront: return self.topFront
-            case .topLeft: return self.topLeft
-            case .topBack: return self.topBack
-            case .middleRightFront: return self.middleRightFront
-            case .middleLeftFront: return self.middleLeftFront
-            case .middleLeftBack: return self.middleLeftBack
-            case .middleRightBack: return self.middleRightBack
-            case .bottomRight: return self.bottomRight
-            case .bottomFront: return self.bottomFront
-            case .bottomLeft: return self.bottomLeft
-            case .bottomBack: return self.bottomBack
-            }
-        }
-        set {
-            switch location {
-            case .topRight: self.topRight = newValue
-            case .topFront: self.topFront = newValue
-            case .topLeft: self.topLeft = newValue
-            case .topBack: self.topBack = newValue
-            case .middleRightFront: self.middleRightFront = newValue
-            case .middleLeftFront: self.middleLeftFront = newValue
-            case .middleLeftBack: self.middleLeftBack = newValue
-            case .middleRightBack: self.middleRightBack = newValue
-            case .bottomRight: self.bottomRight = newValue
-            case .bottomFront: self.bottomFront = newValue
-            case .bottomLeft: self.bottomLeft = newValue
-            case .bottomBack: self.bottomBack = newValue
-            }
-        }
+    public subscript(location: EdgeLocation) -> EdgePiece {
+        get { self[keyPath: location.keyPath] }
+        set { self[keyPath: location.keyPath] = newValue }
     }
 
     fileprivate mutating func map(_ face: Face, _ f: (EdgeLocation, EdgePiece) -> EdgePiece) {
@@ -137,45 +135,23 @@ public struct EdgePieceCollection {
     }
 
     public var all: [EdgePiece] {
-        return [self.topRight, self.topFront, self.topLeft, self.topBack, self.middleRightFront, self.middleLeftFront, self.middleLeftBack, self.middleRightBack, self.bottomRight, self.bottomFront, self.bottomLeft, self.bottomBack]
+        EdgeLocation.allCases.map { self[$0] }
     }
 }
 
-public struct CornerPieceCollection {
-    fileprivate var topRightFront: CornerPiece
-    fileprivate var topLeftFront: CornerPiece
-    fileprivate var topLeftBack: CornerPiece
-    fileprivate var topRightBack: CornerPiece
-    fileprivate var bottomRightFront: CornerPiece
-    fileprivate var bottomLeftFront: CornerPiece
-    fileprivate var bottomLeftBack: CornerPiece
-    fileprivate var bottomRightBack: CornerPiece
+public struct CornerPieceCollection: Equatable {
+    public var topRightFront: CornerPiece
+    public var topLeftFront: CornerPiece
+    public var topLeftBack: CornerPiece
+    public var topRightBack: CornerPiece
+    public var bottomRightFront: CornerPiece
+    public var bottomLeftFront: CornerPiece
+    public var bottomLeftBack: CornerPiece
+    public var bottomRightBack: CornerPiece
 
-    fileprivate subscript(location: CornerLocation) -> CornerPiece {
-        get {
-            switch location {
-            case .topRightFront: return self.topRightFront
-            case .topLeftFront: return self.topLeftFront
-            case .topLeftBack: return self.topLeftBack
-            case .topRightBack: return self.topRightBack
-            case .bottomRightFront: return self.bottomRightFront
-            case .bottomLeftFront: return self.bottomLeftFront
-            case .bottomLeftBack: return self.bottomLeftBack
-            case .bottomRightBack: return self.bottomRightBack
-            }
-        }
-        set {
-            switch location {
-            case .topRightFront: self.topRightFront = newValue
-            case .topLeftFront: self.topLeftFront = newValue
-            case .topLeftBack: self.topLeftBack = newValue
-            case .topRightBack: self.topRightBack = newValue
-            case .bottomRightFront: self.bottomRightFront = newValue
-            case .bottomLeftFront: self.bottomLeftFront = newValue
-            case .bottomLeftBack: self.bottomLeftBack = newValue
-            case .bottomRightBack: self.bottomRightBack = newValue
-            }
-        }
+    public subscript(location: CornerLocation) -> CornerPiece {
+        get { self[keyPath: location.keyPath] }
+        set { self[keyPath: location.keyPath] = newValue }
     }
 
     fileprivate mutating func map(_ face: Face, _ f: (CornerLocation, CornerPiece) -> CornerPiece) {
@@ -190,14 +166,14 @@ public struct CornerPieceCollection {
     }
 
     public var all: [CornerPiece] {
-        return [self.topRightFront, self.topLeftFront, self.topLeftBack, self.topRightBack, self.bottomRightFront, self.bottomLeftFront, self.bottomLeftBack, self.bottomRightBack]
+        CornerLocation.allCases.map { self[$0] }
     }
 }
 
-public struct Cube {
-    public struct Pieces {
-        fileprivate static let numberOfEdges = EdgeLocation.all.count
-        fileprivate static let numberOfCorners = CornerLocation.all.count
+public struct Cube: Equatable {
+    public struct Pieces: Equatable {
+        fileprivate static let numberOfEdges = EdgeLocation.allCases.count
+        fileprivate static let numberOfCorners = CornerLocation.allCases.count
 
         public var edges: EdgePieceCollection
         public var corners: CornerPieceCollection
@@ -205,7 +181,7 @@ public struct Cube {
 
     public var pieces: Pieces
 
-    public static let unscrambledCube = Cube()
+    public static let solved = Cube()
 
     public init() {
         self.pieces = Pieces(
@@ -214,14 +190,14 @@ public struct Cube {
                 topFront: EdgePiece(.topFront),
                 topLeft: EdgePiece(.topLeft),
                 topBack: EdgePiece(.topBack),
-                middleRightFront: EdgePiece(.middleRightFront),
-                middleLeftFront: EdgePiece(.middleLeftFront),
-                middleLeftBack: EdgePiece(.middleLeftBack),
-                middleRightBack: EdgePiece(.middleRightBack),
                 bottomRight: EdgePiece(.bottomRight),
                 bottomFront: EdgePiece(.bottomFront),
                 bottomLeft: EdgePiece(.bottomLeft),
-                bottomBack: EdgePiece(.bottomBack)
+                bottomBack: EdgePiece(.bottomBack),
+                middleRightFront: EdgePiece(.middleRightFront),
+                middleLeftFront: EdgePiece(.middleLeftFront),
+                middleLeftBack: EdgePiece(.middleLeftBack),
+                middleRightBack: EdgePiece(.middleRightBack)
             ),
             corners: CornerPieceCollection(
                 topRightFront: CornerPiece(.topRightFront),
@@ -237,110 +213,38 @@ public struct Cube {
     }
 
     public init(applyingToSolvedCube moves: [Move]) {
-        var cube = Cube.unscrambledCube
-
-        cube.apply(moves)
-
-        self = cube
-    }
-}
-
-extension Cube: Equatable {
-    public static func ==(lhs: Cube, rhs: Cube) -> Bool {
-        return lhs.pieces == rhs.pieces
-    }
-}
-
-extension Cube.Pieces: Equatable {
-    public static func ==(lhs: Cube.Pieces, rhs: Cube.Pieces) -> Bool {
-        return lhs.edges == rhs.edges && lhs.corners == rhs.corners
-    }
-}
-
-extension EdgePieceCollection: Equatable {
-    public static func ==(lhs: EdgePieceCollection, rhs: EdgePieceCollection) -> Bool {
-        return lhs.topRight == rhs.topRight &&
-            lhs.topFront == rhs.topFront &&
-            lhs.topLeft == rhs.topLeft &&
-            lhs.topBack == rhs.topBack &&
-            lhs.middleRightFront == rhs.middleRightFront &&
-            lhs.middleLeftFront == rhs.middleLeftFront &&
-            lhs.middleLeftBack == rhs.middleLeftBack &&
-            lhs.middleRightBack == rhs.middleRightBack &&
-            lhs.bottomRight == rhs.bottomRight &&
-            lhs.bottomFront == rhs.bottomFront &&
-            lhs.bottomLeft == rhs.bottomLeft &&
-            lhs.bottomBack == rhs.bottomBack
-    }
-}
-
-extension CornerPieceCollection: Equatable {
-    public static func ==(lhs: CornerPieceCollection, rhs: CornerPieceCollection) -> Bool {
-        return lhs.topRightFront == rhs.topRightFront &&
-            lhs.topLeftFront == rhs.topLeftFront &&
-            lhs.topLeftBack == rhs.topLeftBack &&
-            lhs.topRightBack == rhs.topRightBack &&
-            lhs.bottomRightFront == rhs.bottomRightFront &&
-            lhs.bottomLeftFront == rhs.bottomLeftFront &&
-            lhs.bottomLeftBack == rhs.bottomLeftBack &&
-            lhs.bottomRightBack == rhs.bottomRightBack
-    }
-}
-
-extension EdgePiece: Equatable {
-    public static func ==(lhs: EdgePiece, rhs: EdgePiece) -> Bool {
-        return lhs.location == rhs.location && lhs.orientation == rhs.orientation
-    }
-}
-
-extension CornerPiece: Equatable {
-    public static func ==(lhs: CornerPiece, rhs: CornerPiece) -> Bool {
-        return lhs.location == rhs.location && lhs.orientation == rhs.orientation
+        self = .solved.applying(moves)
     }
 }
 
 extension EdgeLocation {
-    fileprivate static let all: Set<EdgeLocation> = [.topRight, .topFront, .topLeft, .topBack, .middleRightFront, .middleLeftFront, .middleLeftBack, .middleRightBack, .bottomRight, .bottomFront, .bottomLeft, .bottomBack]
-
-    fileprivate static let topEdges: [EdgeLocation] = [.topRight, .topFront, .topLeft, .topBack]
-    fileprivate static let bottomEdges: [EdgeLocation] = [.bottomFront, .bottomRight, .bottomBack, .bottomLeft]
-    fileprivate static let leftEdges: [EdgeLocation] = [.topLeft, .middleLeftFront, .bottomLeft, .middleLeftBack]
-    fileprivate static let rightEdges: [EdgeLocation] = [.topRight, .middleRightBack, .bottomRight, .middleRightFront]
-    fileprivate static let frontEdges: [EdgeLocation] = [.topFront, .middleRightFront, .bottomFront, .middleLeftFront]
-    fileprivate static let backEdges: [EdgeLocation] = [.topBack, .middleLeftBack, .bottomBack, .middleRightBack]
+    fileprivate static let all = Set(EdgeLocation.allCases)
 
     // Sorted clockwise
     fileprivate static func locations(in face: Face) -> [EdgeLocation] {
         switch face {
-        case .top: return EdgeLocation.topEdges
-        case .bottom: return EdgeLocation.bottomEdges
-        case .left: return EdgeLocation.leftEdges
-        case .right: return EdgeLocation.rightEdges
-        case .front: return EdgeLocation.frontEdges
-        case .back: return EdgeLocation.backEdges
+        case .top: [.topRight, .topFront, .topLeft, .topBack]
+        case .bottom: [.bottomFront, .bottomRight, .bottomBack, .bottomLeft]
+        case .left: [.topLeft, .middleLeftFront, .bottomLeft, .middleLeftBack]
+        case .right: [.topRight, .middleRightBack, .bottomRight, .middleRightFront]
+        case .front: [.topFront, .middleRightFront, .bottomFront, .middleLeftFront]
+        case .back: [.topBack, .middleLeftBack, .bottomBack, .middleRightBack]
         }
     }
 }
 
 extension CornerLocation {
-    fileprivate static let all: Set<CornerLocation> = [.topRightFront, .topLeftFront, .topLeftBack, .topRightBack, .bottomRightFront, .bottomLeftFront, .bottomLeftBack, .bottomRightBack]
-
-    fileprivate static let topCorners: [CornerLocation] = [.topRightFront, .topLeftFront, .topLeftBack, .topRightBack]
-    fileprivate static let bottomCorners: [CornerLocation] = [.bottomLeftFront, .bottomRightFront, .bottomRightBack, .bottomLeftBack]
-    fileprivate static let leftCorners: [CornerLocation] = [.topLeftBack, .topLeftFront, .bottomLeftFront, .bottomLeftBack]
-    fileprivate static let rightCorners: [CornerLocation] = [.topRightFront, .topRightBack, .bottomRightBack, .bottomRightFront]
-    fileprivate static let frontCorners: [CornerLocation] = [.topLeftFront, .topRightFront, .bottomRightFront, .bottomLeftFront]
-    fileprivate static let backCorners: [CornerLocation] = [.topRightBack, .topLeftBack, .bottomLeftBack, .bottomRightBack]
+    fileprivate static let all = Set(CornerLocation.allCases)
 
     // Sorted clockwise
     fileprivate static func locations(in face: Face) -> [CornerLocation] {
         switch face {
-        case .top: return CornerLocation.topCorners
-        case .bottom: return CornerLocation.bottomCorners
-        case .left: return CornerLocation.leftCorners
-        case .right: return CornerLocation.rightCorners
-        case .front: return CornerLocation.frontCorners
-        case .back: return CornerLocation.backCorners
+        case .top: [.topRightFront, .topLeftFront, .topLeftBack, .topRightBack]
+        case .bottom: [.bottomLeftFront, .bottomRightFront, .bottomRightBack, .bottomLeftBack]
+        case .left: [.topLeftBack, .topLeftFront, .bottomLeftFront, .bottomLeftBack]
+        case .right: [.topRightFront, .topRightBack, .bottomRightBack, .bottomRightFront]
+        case .front: [.topLeftFront, .topRightFront, .bottomRightFront, .bottomLeftFront]
+        case .back: [.topRightBack, .topLeftBack, .bottomLeftBack, .bottomRightBack]
         }
     }
 }
@@ -368,69 +272,6 @@ extension Face {
         case (.back, .topRightBack), (.back, .topLeftBack), (.back, .bottomLeftBack), (.back, .bottomRightBack): return true
         default: return false
         }
-    }
-}
-
-extension Cube {
-    public var numberOfPiecesInCorrectLocation: Int {
-        let unscrambled = Cube.unscrambledCube
-
-        var count = 0
-
-        for edgeLocation in EdgeLocation.all {
-            if unscrambled.pieces.edges[edgeLocation].location == self.pieces.edges[edgeLocation].location {
-                count += 1
-            }
-        }
-
-        for cornerLocation in CornerLocation.all {
-            if unscrambled.pieces.corners[cornerLocation].location == self.pieces.corners[cornerLocation].location {
-                count += 1
-            }
-        }
-
-        return count
-    }
-
-    public var numberOfPiecesWithCorrectOrientation: Int {
-        var count = 0
-
-        let edges = self.pieces.edges.all
-        let corners = self.pieces.corners.all
-
-        for edge in edges where edge.orientation == .correct {
-            count += 1
-        }
-
-        for corner in corners where corner.orientation == .correct {
-            count += 1
-        }
-
-        return count
-    }
-
-    // The total number of pieces that are in the correct location and orientation
-    public var numberOfSolvedPieces: Int {
-        var count = 0
-
-        let edges = self.pieces.edges
-        let corners = self.pieces.corners
-
-        for edgeLocation in EdgeLocation.all {
-            let edge = edges[edgeLocation]
-            if edge.orientation == .correct && edge.location == edgeLocation {
-                count += 1
-            }
-        }
-
-        for cornerLocation in CornerLocation.all {
-            let corner = corners[cornerLocation]
-            if corner.orientation == .correct && corner.location == cornerLocation {
-                count += 1
-            }
-        }
-
-        return count
     }
 }
 
@@ -525,18 +366,14 @@ public struct Move {
     }
 }
 
-// These are based on the relative notion based on my method to solve the cube blind-folded
-// The top and bottom faces are considered strong.
-// Front and back are considered regular.
-// Left and right are considered weak.
-// A "sticker" of strong color or regular color in a strong or regular face is considered correct orientation.
-// A "sticker" of a weak color in a strong or regular face is considered in incorrect orientation.
+// These are based on Kociemba's definition of orientation
+// https://web.archive.org/web/20220124065317/https://kociemba.org/math/cubielevel.htm
 extension Face {
     fileprivate var quarterTurnAffectsEdgeOrientation: Bool {
         switch self {
         case .top, .bottom: return false
-        case .left, .right: return true
-        case .front, .back: return false
+        case .left, .right: return false
+        case .front, .back: return true
         }
     }
 
@@ -613,7 +450,6 @@ extension Cube {
     public func applying(_ moves: [Move]) -> Cube {
         var cube = self
         cube.apply(moves)
-
         return cube
     }
 }
@@ -667,23 +503,28 @@ extension Move.Magnitude: CustomStringConvertible {
     }
 }
 
-extension Move {
+extension Face: LosslessStringConvertible {
     public init?(_ string: String) {
-        guard string.count <= 2 else { return nil }
-        guard let firstCharacter = string.first.map( { String($0) }) else { return nil }
-
-        let face: Face
-        let magnitude: Magnitude
-
-        switch firstCharacter {
-        case "U": face = .top
-        case "D": face = .bottom
-        case "L": face = .left
-        case "R": face = .right
-        case "F": face = .front
-        case "B": face = .back
+        switch string {
+        case "U": self = .top
+        case "D": self = .bottom
+        case "L": self = .left
+        case "R": self = .right
+        case "F": self = .front
+        case "B": self = .back
         default: return nil
         }
+    }
+}
+
+extension Move: LosslessStringConvertible {
+    public init?(_ string: String) {
+        guard string.count <= 2,
+              let firstCharacter = string.first,
+              let face = Face("\(firstCharacter)")
+              else { return nil }
+
+        let magnitude: Magnitude
 
         if string.count > 1 {
             switch string.last {
@@ -697,18 +538,6 @@ extension Move {
         }
 
         self = Move(face: face, magnitude: magnitude)
-    }
-
-    public static func moves(_ string: String) -> [Move]? {
-        let moveStrings = string.components(separatedBy: " ")
-
-        let moves = moveStrings.compactMap(Move.init)
-
-        guard moves.count == moveStrings.count else {
-            return nil
-        }
-
-        return moves
     }
 }
 
