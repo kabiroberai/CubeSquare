@@ -105,6 +105,10 @@ final class CubeViewModel {
             self.hardware = try? await cube.hardware()
         }
 
+        if let facelets = try? await cube.facelets() {
+            rsCube = facelets.cube()
+        }
+
         async let battery: Void = getBattery()
         async let gyro: Void = getGyro()
         async let hardware: Void = getHardware()
@@ -116,6 +120,7 @@ final class CubeViewModel {
     func calibrate() {
         basis = nil
         rsCube = Cube()
+        Task { try await cube.reset() }
     }
 }
 
@@ -134,19 +139,56 @@ struct CubeView: View {
             Text("Solved: \(cubeVM.rsCube == .solved)")
 
             if let batteryLevel = cubeVM.batteryLevel {
-                Text("Battery: \(batteryLevel)%")
+                Text("Battery: \(batteryLevel, format: .number.precision(.integerLength(2...2)))%")
             } else {
                 ProgressView("Loading battery")
             }
 
             if let hardware = cubeVM.hardware {
-                Text("HW: \(hardware.hardwareName) (sw=\(hardware.softwareVersion), hw=\(hardware.hardwareVersion), gyro=\(hardware.supportsGyroscope))")
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Hardware name:")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        Text(hardware.hardwareName)
+                            .font(.body)
+                            .fontWeight(.medium)
+                    }
+                    HStack {
+                        Text("Software:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(hardware.softwareVersion)
+                            .font(.body)
+                            .fontWeight(.medium)
+                    }
+                    HStack {
+                        Text("Hardware version:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(hardware.hardwareVersion)
+                            .font(.body)
+                            .fontWeight(.medium)
+                    }
+                    HStack {
+                        Text("Gyroscope:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(hardware.supportsGyroscope ? "Supported" : "Not Supported")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(hardware.supportsGyroscope ? .green : .red)
+                    }
+                }
+                .padding()
+                .background(Color.secondary.opacity(0.1))
+                .cornerRadius(12)
             } else {
                 ProgressView("Loading hardware")
             }
 
             if cubeVM.hasOrientation {
-                CubeSceneKitView(cubeVM: cubeVM)
+                CubeRealityView(cubeVM: cubeVM)
 
                 Button("Calibrate") {
                     cubeVM.calibrate()
@@ -169,15 +211,17 @@ struct CubeView: View {
 
 #if os(visionOS)
 import ARKit
+#endif
 import RealityKit
 
-struct CubeSceneKitView: View {
+struct CubeRealityView: View {
     let cubeVM: CubeViewModel
 
     var body: some View {
         RealityView { content in
-            let size: Float = 0.0575
+            let cubeeSize = 0.0575
 
+            #if os(visionOS)
             Task {
                 // doesn't work: requires immersive view
                 let session = ARKitSession()
@@ -185,7 +229,7 @@ struct CubeSceneKitView: View {
                     UIColor.red.setFill()
                     ctx.fill(.init(x: 0, y: 0, width: 100, height: 100))
                 }
-                let cubee = Double(size) / 3
+                let cubee = cubeeSize / 3
                 let ref = ReferenceImage(cgimage: image.cgImage!, physicalSize: .init(width: cubee, height: cubee))
                 let imageTracker = ImageTrackingProvider(referenceImages: [ref])
                 try await session.run([imageTracker])
@@ -196,7 +240,14 @@ struct CubeSceneKitView: View {
                 print("Done tracking")
                 _ = session
             }
+            #endif
 
+            let size: Float
+            #if os(visionOS)
+            size = Float(cubeeSize)
+            #else
+            size = 1
+            #endif
             let mesh = MeshResource.generateBox(width: size, height: size, depth: size, splitFaces: true)
             let colors: [SimpleMaterial.Color] = [.blue, .white, .green, .yellow, .orange, .red]
             let materials = colors.map { SimpleMaterial(color: $0, roughness: 1.0, isMetallic: false) }
@@ -210,67 +261,6 @@ struct CubeSceneKitView: View {
         }
     }
 }
-#else
-import SceneKit
-
-struct CubeSceneKitView: View {
-    let cubeVM: CubeViewModel
-
-    private let camera: SCNNode = {
-        let camera = SCNNode()
-        camera.camera = SCNCamera()
-        return camera
-    }()
-
-    @State private var scene: CubeScene?
-
-    var body: some View {
-        SceneView(scene: scene, pointOfView: camera)
-            .task {
-                scene = CubeScene(cubeVM: cubeVM)
-            }
-    }
-}
-
-@MainActor
-private final class CubeScene: SCNScene {
-    let cubeVM: CubeViewModel
-
-    required init?(coder: NSCoder) { nil }
-
-    #if os(macOS)
-    typealias RawColor = NSColor
-    #else
-    typealias RawColor = UIColor
-    #endif
-
-    init(cubeVM: CubeViewModel) {
-        self.cubeVM = cubeVM
-        super.init()
-
-        self.rootNode.position = SCNVector3(x: 0, y: 0, z: -10)
-        background.contents = RawColor.black
-
-        func material(_ color: RawColor) -> SCNMaterial {
-            let material = SCNMaterial()
-            material.diffuse.contents = color
-            return material
-        }
-
-        let box = SCNBox(width: 5, height: 5, length: 5, chamferRadius: 0)
-        box.materials = [.blue, .orange, .green, .red, .white, .yellow].map(material)
-
-        let node = SCNNode(geometry: box)
-        self.rootNode.addChildNode(node)
-
-        observeChanges {
-            if let orientation = cubeVM.orientation {
-                node.simdOrientation = simd_quatf(vector: simd_float4(orientation.vector))
-            }
-        }
-    }
-}
-#endif
 
 func observeChanges(_ changes: @escaping () -> Void) {
     withObservationTracking {

@@ -483,6 +483,10 @@ final class GANCube {
         }
     }
 
+    func reset() async throws {
+        try await send(.reset)
+    }
+
     var gyroData: some Publisher<GANGyroData, Never> {
         events.compactMap { event in
             if case let .gyro(value) = event.event { value } else { nil }
