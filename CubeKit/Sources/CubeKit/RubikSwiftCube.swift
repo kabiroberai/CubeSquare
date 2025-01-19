@@ -1,14 +1,6 @@
-//
-//  Cube.swift
-//  RubikSwift
-//
-//  Created by Javier Soto on 10/28/16.
-//  Copyright © 2016 Javier Soto. All rights reserved.
-//
-
 // https://github.com/JaviSoto/RubikSwift
 
-public enum EdgeLocation: Int, CaseIterable {
+public enum EdgeLocation: Int, CaseIterable, Sendable {
     case topRight
     case topFront
     case topLeft
@@ -40,8 +32,8 @@ public enum EdgeLocation: Int, CaseIterable {
     }
 }
 
-public struct EdgePiece: Equatable {
-    public enum Orientation: Int, CaseIterable {
+public struct EdgePiece: Equatable, Sendable {
+    public enum Orientation: Int, CaseIterable, Sendable {
         case correct
         case flipped
     }
@@ -55,7 +47,7 @@ public struct EdgePiece: Equatable {
     }
 }
 
-public enum CornerLocation: Int, CaseIterable {
+public enum CornerLocation: Int, CaseIterable, Sendable {
     case topRightFront
     case topLeftFront
     case topLeftBack
@@ -79,8 +71,8 @@ public enum CornerLocation: Int, CaseIterable {
     }
 }
 
-public struct CornerPiece: Equatable {
-    public enum Orientation: Int, CaseIterable {
+public struct CornerPiece: Equatable, Sendable {
+    public enum Orientation: Int, CaseIterable, Sendable {
         case correct
         case rotatedClockwise
         case rotatedCounterClockwise
@@ -95,7 +87,7 @@ public struct CornerPiece: Equatable {
     }
 }
 
-public enum Face: CaseIterable {
+public enum Face: CaseIterable, Sendable {
     case top
     case bottom
     case left
@@ -104,7 +96,7 @@ public enum Face: CaseIterable {
     case back
 }
 
-public struct EdgePieceCollection: Equatable {
+public struct EdgePieceCollection: Equatable, Sendable {
     public var topRight: EdgePiece
     public var topFront: EdgePiece
     public var topLeft: EdgePiece
@@ -154,7 +146,7 @@ public struct EdgePieceCollection: Equatable {
     )
 }
 
-public struct CornerPieceCollection: Equatable {
+public struct CornerPieceCollection: Equatable, Sendable {
     public var topRightFront: CornerPiece
     public var topLeftFront: CornerPiece
     public var topLeftBack: CornerPiece
@@ -196,7 +188,7 @@ public struct CornerPieceCollection: Equatable {
     )
 }
 
-public struct Cube: Equatable {
+public struct Cube: Equatable, Sendable {
     public var edges: EdgePieceCollection
     public var corners: CornerPieceCollection
 
@@ -335,8 +327,8 @@ public func -(lhs: CornerPiece, rhs: CornerPiece.Orientation) -> CornerPiece {
     return CornerPiece(lhs.location, orientation: lhs.orientation - rhs)
 }
 
-public struct Move {
-    public enum Magnitude {
+public struct Move: Sendable {
+    public enum Magnitude: Sendable {
         case clockwiseQuarterTurn
         case halfTurn
         case counterClockwiseQuarterTurn

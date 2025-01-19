@@ -1,4 +1,5 @@
 import Testing
+import CubeKit
 @testable import GANApp
 
 @Test func bitReader() async throws {

@@ -6,6 +6,10 @@
 	objectVersion = 70;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		562583512D3CB24F0067D540 /* CubeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 562583502D3CB24F0067D540 /* CubeKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		560F63D42C5ED65200B369C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		560F63C22C5ED65100B369C1 /* GANApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GANApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		560F63D32C5ED65200B369C1 /* GANAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GANAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		560F63DD2C5ED65200B369C1 /* GANAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GANAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5625834E2D3CB1EE0067D540 /* CubeKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = CubeKit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -50,6 +55,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				562583512D3CB24F0067D540 /* CubeKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -73,9 +79,11 @@
 		560F63B92C5ED65100B369C1 = {
 			isa = PBXGroup;
 			children = (
+				5625834E2D3CB1EE0067D540 /* CubeKit */,
 				560F63C42C5ED65100B369C1 /* GANApp */,
 				560F63D62C5ED65200B369C1 /* GANAppTests */,
 				560F63E02C5ED65200B369C1 /* GANAppUITests */,
+				5625834F2D3CB24F0067D540 /* Frameworks */,
 				560F63C32C5ED65100B369C1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,6 +96,13 @@
 				560F63DD2C5ED65200B369C1 /* GANAppUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		5625834F2D3CB24F0067D540 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -110,6 +125,7 @@
 			);
 			name = GANApp;
 			packageProductDependencies = (
+				562583502D3CB24F0067D540 /* CubeKit */,
 			);
 			productName = GANApp;
 			productReference = 560F63C22C5ED65100B369C1 /* GANApp.app */;
@@ -592,6 +608,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		562583502D3CB24F0067D540 /* CubeKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CubeKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 560F63BA2C5ED65100B369C1 /* Project object */;
 }
