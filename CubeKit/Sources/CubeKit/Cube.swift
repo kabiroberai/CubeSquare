@@ -1,4 +1,4 @@
-// https://github.com/JaviSoto/RubikSwift
+// based on https://github.com/JaviSoto/RubikSwift
 
 public enum EdgeLocation: Int, CaseIterable, Sendable {
     case topRight
