@@ -1,6 +1,7 @@
 import CoreBluetooth
 import Combine
-import CommonCrypto
+import Crypto
+import _CryptoExtras
 
 // based on https://github.com/afedotov/gan-web-bluetooth
 
@@ -333,13 +334,19 @@ struct GANGen2Serializer: GANSerializer {
 }
 
 struct GANCommonCryptor: GANCryptor {
-    var key: [UInt8]
-    var iv: [UInt8]
+    var key: SymmetricKey
+    var iv: AES._CBC.IV
 
-    init(key: [UInt8], iv: [UInt8], salt: [UInt8]) {
-        assert(key.count == 16, "key.count (\(key.count)) != 16")
-        assert(iv.count == 16, "iv.count (\(iv.count)) != 16")
-        assert(salt.count == 6, "salt.count (\(salt.count)) != 6")
+    init(key: [UInt8], iv: [UInt8], salt: [UInt8]) throws {
+        guard key.count == 16 else {
+            throw Errors.badParameterSize("key", expected: 16, actual: key.count)
+        }
+        guard iv.count == 16 else {
+            throw Errors.badParameterSize("iv", expected: 16, actual: iv.count)
+        }
+        guard salt.count == 6 else {
+            throw Errors.badParameterSize("salt", expected: 6, actual: salt.count)
+        }
 
         var key = key
         var iv = iv
@@ -350,31 +357,22 @@ struct GANCommonCryptor: GANCryptor {
             iv[i] = UInt8((UInt16(iv[i]) + byte) % 0xFF)
         }
 
-        self.key = key
-        self.iv = iv
+        self.key = SymmetricKey(data: key)
+        self.iv = try AES._CBC.IV(ivBytes: iv)
     }
 
     enum Errors: Error {
-        case commonCryptoError(CCCryptorStatus)
+        case badParameterSize(String, expected: Int, actual: Int)
         case truncatedData
     }
 
     private func transform(chunk: [UInt8], encrypt: Bool) throws -> [UInt8] {
-        try [UInt8](unsafeUninitializedCapacity: chunk.count) { outBuf, outLen in
-            let status = CCCrypt(
-                UInt32(encrypt ? kCCEncrypt : kCCDecrypt),
-                UInt32(kCCAlgorithmAES128),
-                /* options: */ 0,
-                key, key.count,
-                iv,
-                chunk, chunk.count,
-                outBuf.baseAddress, outBuf.count,
-                &outLen
-            )
-            guard status == kCCSuccess else {
-                throw Errors.commonCryptoError(status)
-            }
+        let data = if encrypt {
+            try AES._CBC.encrypt(chunk, using: key, iv: iv, noPadding: true)
+        } else {
+            try AES._CBC.decrypt(chunk, using: key, iv: iv, noPadding: true)
         }
+        return Array(data)
     }
 
     private func transform(chunk: inout ArraySlice<UInt8>, encrypt: Bool) throws {

@@ -15,9 +15,16 @@ let package = Package(
             targets: ["CubeKit"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.10.0"),
+    ],
     targets: [
         .target(
             name: "CubeKit",
+            dependencies: [
+                .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "_CryptoExtras", package: "swift-crypto"),
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v5),
             ]
