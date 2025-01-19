@@ -1,6 +1,5 @@
 import Testing
-import CubeKit
-@testable import GANApp
+@testable import CubeKit
 
 @Test func bitReader() async throws {
     let bytes: [UInt8] = [0b1100_0000, 0b1010_0001, 0b0110_1001, 0b0010_0110, 0b0101_1010, 0b0011_0100]

@@ -1,7 +1,6 @@
 import CoreBluetooth
 import Combine
 import CommonCrypto
-import CubeKit
 
 // based on https://github.com/afedotov/gan-web-bluetooth
 
@@ -25,36 +24,36 @@ extension GANConstants {
     static let ganIV2: [UInt8] = [0x01, 0x44, 0x28, 0x06, 0x86, 0x21, 0x22, 0x28, 0x51, 0x05, 0x08, 0x31, 0x82, 0x02, 0x21, 0x06]
 }
 
-struct GANHardware: Hashable {
-    var hardwareName: String
-    var softwareVersion: String
-    var hardwareVersion: String
-    var supportsGyroscope: Bool
+public struct GANHardware: Hashable {
+    public var hardwareName: String
+    public var softwareVersion: String
+    public var hardwareVersion: String
+    public var supportsGyroscope: Bool
 }
 
-struct GANGyroData: Hashable, Sendable {
-    struct Orientation: Hashable, Sendable {
-        var x: Double
-        var y: Double
-        var z: Double
-        var w: Double
+public struct GANGyroData: Hashable, Sendable {
+    public struct Orientation: Hashable, Sendable {
+        public var x: Double
+        public var y: Double
+        public var z: Double
+        public var w: Double
     }
 
-    struct AngularVelocity: Hashable, Sendable {
-        var x: Double
-        var y: Double
-        var z: Double
+    public struct AngularVelocity: Hashable, Sendable {
+        public var x: Double
+        public var y: Double
+        public var z: Double
     }
 
-    var orientation: Orientation
-    var angularVelocity: AngularVelocity?
+    public var orientation: Orientation
+    public var angularVelocity: AngularVelocity?
 }
 
-struct GANMove: Hashable, Sendable, CustomStringConvertible {
-    enum Face: Int, CustomStringConvertible {
+public struct GANMove: Hashable, Sendable, CustomStringConvertible {
+    public enum Face: Int, CustomStringConvertible, Sendable {
         case up = 0, right, front, down, left, back
 
-        var description: String {
+        public var description: String {
             switch self {
             case .up: "U"
             case .right: "R"
@@ -66,44 +65,44 @@ struct GANMove: Hashable, Sendable, CustomStringConvertible {
         }
     }
 
-    enum Direction: Int {
+    public enum Direction: Int, Sendable {
         case clockwise = 0, anticlockwise
     }
 
-    var face: Face
-    var direction: Direction
+    public var face: Face
+    public var direction: Direction
 
-    var description: String {
+    public var description: String {
         "\(face)\(direction == .clockwise ? "" : "'")"
     }
 }
 
-struct GANFacelets: Hashable, Sendable {
-    var cp: [UInt8]
-    var co: [UInt8]
-    var ep: [UInt8]
-    var eo: [UInt8]
-    var serial: UInt8
+public struct GANFacelets: Hashable, Sendable {
+    public var cp: [UInt8]
+    public var co: [UInt8]
+    public var ep: [UInt8]
+    public var eo: [UInt8]
+    public var serial: UInt8
 }
 
-struct BluetoothUUID: Hashable, ExpressibleByStringLiteral {
-    let string: String
+public struct BluetoothUUID: Hashable, ExpressibleByStringLiteral {
+    public let string: String
 
-    init(_ string: String) {
+    public init(_ string: String) {
         self.string = string.uppercased()
     }
 
-    init(stringLiteral value: String) {
+    public init(stringLiteral value: String) {
         self.init(value)
     }
 
-    var cbUUID: CBUUID {
+    public var cbUUID: CBUUID {
         CBUUID(string: string)
     }
 }
 
 extension CBUUID {
-    var bluetoothUUID: BluetoothUUID {
+    public var bluetoothUUID: BluetoothUUID {
         BluetoothUUID(uuidString)
     }
 }
@@ -399,7 +398,7 @@ struct GANCommonCryptor: GANCryptor {
     }
 }
 
-final class GANCube {
+public final class GANCube {
     let cubeManager: GANCubeManager
     let serializer: any GANSerializer
     let cryptor: any GANCryptor
@@ -465,35 +464,35 @@ final class GANCube {
         return await result!
     }
 
-    func batteryLevel() async throws -> Int {
+    public func batteryLevel() async throws -> Int {
         try await request(.requestBattery) { event in
             if case let .battery(value) = event.event { value } else { nil }
         }
     }
 
-    func hardware() async throws -> GANHardware {
+    public func hardware() async throws -> GANHardware {
         try await request(.requestHardware) { event in
             if case let .hardware(value) = event.event { value } else { nil }
         }
     }
 
-    func facelets() async throws -> GANFacelets {
+    public func facelets() async throws -> GANFacelets {
         try await request(.requestFacelets) { event in
             if case let .facelets(value) = event.event { value } else { nil }
         }
     }
 
-    func reset() async throws {
+    public func reset() async throws {
         try await send(.reset)
     }
 
-    var gyroData: some Publisher<GANGyroData, Never> {
+    public var gyroData: some Publisher<GANGyroData, Never> {
         events.compactMap { event in
             if case let .gyro(value) = event.event { value } else { nil }
         }
     }
 
-    var moves: some Publisher<GANMove, Never> {
+    public var moves: some Publisher<GANMove, Never> {
         // TODO: test diff > 1
         events.scan(([], -1) as ([GANMove], Int)) { (lastMovesAndSerial, event) in
             let lastSerial = lastMovesAndSerial.1
@@ -506,7 +505,7 @@ final class GANCube {
     }
 }
 
-final class GANCubeManager {
+public final class GANCubeManager {
     let centralManager: CBCentralManager
     let bluetoothDelegate: GANManager.BluetoothDelegate
 
@@ -535,7 +534,7 @@ final class GANCubeManager {
         peripheral.delegate = peripheralDelegate
     }
 
-    func connect() async throws -> GANCube {
+    public func connect() async throws -> GANCube {
         try await _connect()
         let services = try await self.services()
         let serviceByUUID = [BluetoothUUID: CBService](
@@ -628,7 +627,7 @@ final class GANCubeManager {
         return characteristic
     }
 
-    enum Errors: Error {
+    public enum Errors: Error {
         case characteristicNotFound(BluetoothUUID)
         case gen3Unsupported
         case unknownProtocol
@@ -670,11 +669,11 @@ final class GANCubeManager {
 }
 
 @MainActor
-final class GANManager {
+public final class GANManager {
     private let bluetoothDelegate: BluetoothDelegate
     private let centralManager: CBCentralManager
 
-    init() {
+    public init() {
         self.bluetoothDelegate = BluetoothDelegate()
         self.centralManager = CBCentralManager(
             delegate: bluetoothDelegate,
@@ -703,7 +702,7 @@ final class GANManager {
         }
     }
 
-    var cubes: some Publisher<GANCubeManager, Never> {
+    public var cubes: some Publisher<GANCubeManager, Never> {
         bluetoothDelegate.peripherals
             .handleEvents(
                 receiveSubscription: { _ in
@@ -796,7 +795,7 @@ extension Sequence where Element: AdditiveArithmetic {
 }
 
 extension GANFacelets {
-    func cube() -> Cube {
+    public func cube() -> Cube {
         var cube = Cube()
 
         // GAN uses Kociemba's representation, and so does our Cube type,

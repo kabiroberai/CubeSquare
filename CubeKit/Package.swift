@@ -4,6 +4,11 @@ import PackageDescription
 
 let package = Package(
     name: "CubeKit",
+    platforms: [
+        .macOS(.v15),
+        .iOS(.v18),
+        .visionOS(.v2),
+    ],
     products: [
         .library(
             name: "CubeKit",
@@ -12,7 +17,10 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "CubeKit"
+            name: "CubeKit",
+            swiftSettings: [
+                .swiftLanguageMode(.v5),
+            ]
         ),
         .testTarget(
             name: "CubeKitTests",
