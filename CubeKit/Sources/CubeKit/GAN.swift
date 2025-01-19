@@ -366,17 +366,16 @@ struct GANCommonCryptor: GANCryptor {
         case truncatedData
     }
 
-    private func transform(chunk: [UInt8], encrypt: Bool) throws -> [UInt8] {
-        let data = if encrypt {
+    private func transform(chunk: some DataProtocol, encrypt: Bool) throws -> Data {
+        if encrypt {
             try AES._CBC.encrypt(chunk, using: key, iv: iv, noPadding: true)
         } else {
             try AES._CBC.decrypt(chunk, using: key, iv: iv, noPadding: true)
         }
-        return Array(data)
     }
 
     private func transform(chunk: inout ArraySlice<UInt8>, encrypt: Bool) throws {
-        chunk = try transform(chunk: Array(chunk), encrypt: encrypt)[...]
+        chunk = Array(try transform(chunk: chunk, encrypt: encrypt))[...]
     }
 
     func encrypt(_ data: inout [UInt8]) throws {
