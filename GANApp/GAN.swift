@@ -573,9 +573,11 @@ final class GANCubeManager {
     }
 
     private func _connect() async throws {
+        let identifier = self.peripheral.identifier
+
         async let completion = bluetoothDelegate.peripherals.values.compactMap { event -> Result<Void, Error>? in
             guard case let .connectFinished(peripheral, error: error) = event,
-                  peripheral.identifier == self.peripheral.identifier
+                  peripheral.identifier == identifier
                   else { return nil }
             if let error {
                 return .failure(error)
