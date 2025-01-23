@@ -792,24 +792,24 @@ extension Sequence where Element: AdditiveArithmetic {
 }
 
 extension GANFacelets {
-    public func cube() -> Cube {
+    public func cube() -> Cube? {
         var cube = Cube()
 
         // GAN uses Kociemba's representation, and so does our Cube type,
         // so this is more or less a 1:1 mapping.
 
         for (corner, (permutation, orientation)) in zip(CornerLocation.allCases, zip(cp, co)) {
-            cube.corners[corner] = CornerPiece(
-                CornerLocation(rawValue: Int(permutation))!,
-                orientation: CornerPiece.Orientation(rawValue: Int(orientation))!
-            )
+            guard let cornerLocation = CornerLocation(rawValue: Int(permutation)),
+                  let cornerOrientation = CornerPiece.Orientation(rawValue: Int(orientation))
+                  else { return nil }
+            cube.corners[corner] = CornerPiece(cornerLocation, orientation: cornerOrientation)
         }
 
         for (edge, (permutation, orientation)) in zip(EdgeLocation.allCases, zip(ep, eo)) {
-            cube.edges[edge] = EdgePiece(
-                EdgeLocation(rawValue: Int(permutation))!,
-                orientation: EdgePiece.Orientation(rawValue: Int(orientation))!
-            )
+            guard let edgeLocation = EdgeLocation(rawValue: Int(permutation)),
+                  let edgeOrientation = EdgePiece.Orientation(rawValue: Int(orientation))
+                  else { return nil }
+            cube.edges[edge] = EdgePiece(edgeLocation, orientation: edgeOrientation)
         }
 
         return cube

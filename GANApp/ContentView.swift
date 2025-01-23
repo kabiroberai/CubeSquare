@@ -119,7 +119,7 @@ final class CubeViewModel {
         }
 
         if let facelets = try? await cube.facelets() {
-            rsCube = facelets.cube()
+            rsCube = facelets.cube()!
         }
 
         async let battery: Void = getBattery()
