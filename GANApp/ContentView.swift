@@ -25,7 +25,19 @@ struct ContentView: View {
 
 @Observable
 @MainActor
+final class CubeViewModelManager {
+    static let shared = CubeViewModelManager()
+
+    fileprivate(set) var current: CubeViewModel?
+}
+
+@Observable
+@MainActor
 final class CubeViewModel {
+    func makeCurrent() {
+        CubeViewModelManager.shared.current = self
+    }
+
     let cube: GANCube
 
     var batteryLevel: Int?
@@ -131,6 +143,13 @@ struct CubeView: View {
 
     @State private var startTime: Date?
 
+    @State private var isSolving = false
+
+    #if os(visionOS)
+    @Environment(\.openImmersiveSpace) var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
+    #endif
+
     var isSolved: Bool {
         cubeVM.rsCube == .solved
     }
@@ -194,6 +213,21 @@ struct CubeView: View {
                 Button("Calibrate") {
                     cubeVM.calibrate()
                 }
+
+                #if os(visionOS)
+                Toggle("Solve Mode", isOn: $isSolving)
+                    .onChange(of: isSolving) { _, isSolving in
+                        Task {
+                            if isSolving {
+                                cubeVM.makeCurrent()
+                                await openImmersiveSpace(id: SolveView.spaceID)
+                            } else {
+                                await dismissImmersiveSpace()
+                            }
+                        }
+                    }
+                    .fixedSize(horizontal: true, vertical: false)
+                #endif
             } else {
                 ProgressView("Loading gyro")
             }
@@ -221,27 +255,6 @@ struct CubeRealityView: View {
     var body: some View {
         RealityView { content in
             let cubeeSize = 0.0575
-
-            #if os(visionOS)
-            Task {
-                // doesn't work: requires immersive view
-                let session = ARKitSession()
-                let image = UIGraphicsImageRenderer(size: .init(width: 100, height: 100)).image { ctx in
-                    UIColor.red.setFill()
-                    ctx.fill(.init(x: 0, y: 0, width: 100, height: 100))
-                }
-                let cubee = cubeeSize / 3
-                let ref = ReferenceImage(cgimage: image.cgImage!, physicalSize: .init(width: cubee, height: cubee))
-                let imageTracker = ImageTrackingProvider(referenceImages: [ref])
-                try await session.run([imageTracker])
-                print("Starting tracking. Count = \(ref)")
-                for await update in imageTracker.anchorUpdates {
-                    print("Update: \(update)")
-                }
-                print("Done tracking")
-                _ = session
-            }
-            #endif
 
             let size: Float
             #if os(visionOS)
