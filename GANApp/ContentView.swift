@@ -285,6 +285,8 @@ final class CubeEntity: Entity {
         self.setup(cubeVM: nil)
     }
 
+    private var lastAnimationForEntity: [UInt64: (AnimationPlaybackController, Transform)] = [:]
+
     private func setup(cubeVM: CubeViewModel?) {
         let cubeSize: Float = 0.0575
         let size: Float
@@ -333,7 +335,9 @@ final class CubeEntity: Entity {
         }
 
         if let cubeVM {
-            observeChanges {
+            observeChanges { [weak self] in
+                guard let self else { return }
+
                 let cube = cubeVM.rsCube
 
                 for (animation, _) in lastAnimationForEntity.values {
@@ -347,7 +351,7 @@ final class CubeEntity: Entity {
                 if let move {
                     let center = centerEntities[move.face.rawValue]
                     center.transform.rotation = .init(.identity)
-                    move.animate(entity: center, start: center.transform)
+                    animate(move, on: center, start: center.transform)
                 }
 
                 // the location that the corner will be in
@@ -375,7 +379,7 @@ final class CubeEntity: Entity {
                     cornerEntity.transform.rotation = simd_quatf(drawRotation * orient * sourceRotation.inverse)
 
                     if let move, cornerDrawLocation.faces.contains(move.face) {
-                        move.animate(entity: cornerEntity, start: startTransform)
+                        animate(move, on: cornerEntity, start: startTransform)
                     }
                 }
 
@@ -395,7 +399,7 @@ final class CubeEntity: Entity {
                     edgeEntity.transform.rotation = simd_quatf(drawRotation * orient * sourceRotation.inverse)
 
                     if let move, edgeDrawLocation.faces.contains(move.face) {
-                        move.animate(entity: edgeEntity, start: startTransform)
+                        animate(move, on: edgeEntity, start: startTransform)
                     }
                 }
             }
@@ -408,21 +412,17 @@ final class CubeEntity: Entity {
             }
         }
     }
-}
 
-@MainActor private var lastAnimationForEntity: [UInt64: (AnimationPlaybackController, Transform)] = [:]
-
-extension Move {
-    @MainActor fileprivate func animate(entity: Entity, start: Transform) {
+    private func animate(_ move: Move, on entity: Entity, start: Transform) {
         let startT = lastAnimationForEntity[entity.id]?.1 ?? start
         let end = entity.transform
         let animation = OrbitAnimation(
             duration: 0.1,
-            axis: face.offset,
+            axis: move.face.offset,
             startTransform: startT,
-            spinClockwise: magnitude != .counterClockwiseQuarterTurn,
+            spinClockwise: move.magnitude != .counterClockwiseQuarterTurn,
             orientToPath: true,
-            rotationCount: magnitude == .halfTurn ? 0.5 : 0.25,
+            rotationCount: move.magnitude == .halfTurn ? 0.5 : 0.25,
             bindTarget: .transform
         )
         let resource = try! AnimationResource.generate(with: animation)
