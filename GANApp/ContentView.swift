@@ -336,10 +336,9 @@ final class CubeEntity: Entity {
             observeChanges {
                 let cube = cubeVM.rsCube
 
-                for (animation, end) in animations.values {
+                for (animation, _) in lastAnimationForEntity.values {
                     // complete current animations
-                    animation.time = .greatestFiniteMagnitude
-                    animation.speed = .greatestFiniteMagnitude
+                    animation.time = animation.duration
                 }
 
                 let move = cubeVM.lastMove
@@ -411,18 +410,12 @@ final class CubeEntity: Entity {
     }
 }
 
-@MainActor private var animations: [UInt64: (AnimationPlaybackController, Transform)] = [:]
+@MainActor private var lastAnimationForEntity: [UInt64: (AnimationPlaybackController, Transform)] = [:]
 
 extension Move {
     @MainActor fileprivate func animate(entity: Entity, start: Transform) {
-        let startT = animations[entity.id]?.1 ?? start
+        let startT = lastAnimationForEntity[entity.id]?.1 ?? start
         let end = entity.transform
-        // TODO: fix jank when making moves fast in sequence
-        // can see this by extending the duration to 1.0.
-        // we might need to stop() the current `animations[entity]` in
-        // the observe block before starting the new one. but we have to
-        // wait until the anim reaches the end before stopping
-        // (so probably like, one tick).
         let animation = OrbitAnimation(
             duration: 0.1,
             axis: face.offset,
@@ -434,7 +427,7 @@ extension Move {
         )
         let resource = try! AnimationResource.generate(with: animation)
         let cont = entity.playAnimation(resource)
-        animations[entity.id] = (cont, end)
+        lastAnimationForEntity[entity.id] = (cont, end)
     }
 }
 
