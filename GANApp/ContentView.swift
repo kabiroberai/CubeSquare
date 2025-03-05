@@ -291,7 +291,7 @@ final class CubeEntity: Entity {
         let cubeSize: Float = 0.0575
         let size: Float
         #if os(visionOS)
-        size = Float(cubeSize)
+        size = cubeSize
         #else
         size = 1
         #endif
@@ -307,6 +307,9 @@ final class CubeEntity: Entity {
             cornerRadius: cubeeSize * relativeCornerRadius,
             splitFaces: true
         )
+
+        // the order of face materials expected by the box mesh resource
+        // with splitFaces=true
         let faceOrder: [Face] = [.front, .top, .back, .bottom, .right, .left]
 
         let centerEntities = Face.allCases.map { loc in
@@ -375,7 +378,7 @@ final class CubeEntity: Entity {
                     let orient = Rotation3D(angle: .degrees(degrees), axis: .xyz)
                     // inverse of sourceRotation => rotate corner to top-right-front
                     // orient => rotate around top-right-front axis as needed
-                    // otherRotation => rotate corner to match drawn
+                    // drawRotation => rotate corner to match drawn position
                     cornerEntity.transform.rotation = simd_quatf(drawRotation * orient * sourceRotation.inverse)
 
                     if let move, cornerDrawLocation.faces.contains(move.face) {
@@ -468,6 +471,7 @@ extension CornerLocation {
     }
 
     // the transform required to rotate the top-right-front corner to this corner
+    // when in the "correct" orientation
     fileprivate var referenceRotation: Rotation3D {
         let frontFace: Face = switch self {
         case .topRightFront: .front
@@ -520,6 +524,7 @@ extension EdgeLocation {
     }
 
     // the transform required to rotate the top-front edge to this edge
+    // when in the "correct" orientation
     fileprivate var referenceRotation: Rotation3D {
         // follows Kociemba's definition of reference facelets
         let referenceFace: Face =
