@@ -14,6 +14,7 @@ struct SolveView: View {
         case solved(TimeInterval)
     }
 
+    @State private var boundsStore = TextBoundsStore()
     @State var phase: Phase = .waiting
     @State var viewModel = SolveViewModel()
     let cubeVM: CubeViewModel
@@ -28,11 +29,10 @@ struct SolveView: View {
                   let rightThumb = viewModel.rightHand?.transform(for: .thumbTip)
                   else { return }
 
-            let allJoints = [leftMiddle, leftThumb, rightMiddle, rightThumb]
-            let scale = leftMiddle.scale
-
+            let scale = SIMD3<Float>(repeating: 1)
             let rotation = simd_quatf(from: .init(x: 0, y: 0, z: 0), to: .init(x: 0, y: 1, z: 0))
 
+            let allJoints = [leftMiddle, leftThumb, rightMiddle, rightThumb]
             let translation = allJoints.map(\.translation).reduce(.zero, +) / Float(allJoints.count)
 
             viewModel.centerNode.transform = Transform(scale: scale, rotation: rotation, translation: translation)
@@ -64,7 +64,8 @@ struct SolveView: View {
                 extrusionOptions: MeshResource.ShapeExtrusionOptions()
             )
             viewModel.textModel.model!.mesh = textMesh
-            viewModel.textModel.position = (textMesh.bounds.min - textMesh.bounds.center) * [1, 1, 0]
+            let bounds = boundsStore.bounds(for: time)
+            viewModel.textModel.position = (bounds.min - bounds.center) * [1, 1, 0]
         }
         .task {
             do {
@@ -86,6 +87,35 @@ struct SolveView: View {
                 }
             }
         }
+    }
+}
+
+@MainActor
+private final class TextBoundsStore {
+    // num digits : bounds
+    private var cache: [Int: BoundingBox] = [:]
+
+    private func bounds(numDigits: Int) -> BoundingBox {
+        let string = String(repeating: "8", count: numDigits) + ".888"
+        var attrText = AttributedString(string)
+        attrText.uiKit.font = UIFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        let textMesh = try! MeshResource(
+            extruding: attrText,
+            textOptions: MeshResource.GenerateTextOptions(),
+            extrusionOptions: MeshResource.ShapeExtrusionOptions()
+        )
+        return textMesh.bounds
+    }
+
+    func bounds(for number: Double) -> BoundingBox {
+        let floored = floor(number)
+        let numDigits = (floored == 0 ? 0 : Int(log10(floored))) + 1
+        if let cached = cache[numDigits] {
+            return cached
+        }
+        let calculated = bounds(numDigits: numDigits)
+        cache[numDigits] = calculated
+        return calculated
     }
 }
 

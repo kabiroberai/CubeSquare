@@ -1,6 +1,7 @@
 import CubeKit
 import SwiftUI
 import simd
+import Spatial
 
 struct ContentView: View {
     @State private var cubeVM: CubeViewModel?
@@ -70,6 +71,9 @@ final class CubeViewModel {
 
     var rsCube = Cube()
 
+    @ObservationIgnored
+    var lastMove: Move?
+
     init(cube: GANCube) {
         self.cube = cube
     }
@@ -82,7 +86,9 @@ final class CubeViewModel {
         @Sendable @MainActor func getGyro() async {
             for await gyroData in cube.gyroData.values {
                 let orient = gyroData.orientation
-                let quat = simd_quatd(vector: simd_double4(-orient.x, orient.z, orient.y, orient.w))
+                // green facing us, white on top
+                let home = simd_quatd(angle: Angle.degrees(180).radians, axis: SIMD3(0, 1, 0))
+                let quat = simd_quatd(vector: simd_double4(-orient.x, orient.z, orient.y, orient.w)) * home
                 let currentBasis: simd_quatd
                 if let basis {
                     currentBasis = basis
@@ -90,9 +96,7 @@ final class CubeViewModel {
                     currentBasis = quat.conjugate
                     basis = currentBasis
                 }
-                // green facing us, white on top
-                let home = simd_quatd(angle: Angle.degrees(180).radians, axis: SIMD3(0, 1, 0))
-                self.orientation = home * currentBasis * quat
+                self.orientation = currentBasis * quat
             }
         }
 
@@ -110,7 +114,9 @@ final class CubeViewModel {
                 case .anticlockwise: .counterClockwiseQuarterTurn
                 case .clockwise: .clockwiseQuarterTurn
                 }
-                rsCube.apply(.init(face: face, magnitude: magnitude))
+                let move = Move(face: face, magnitude: magnitude)
+                lastMove = move
+                rsCube.apply(move)
             }
         }
 
@@ -210,16 +216,17 @@ struct CubeView: View {
             if cubeVM.hasOrientation {
                 CubeRealityView(cubeVM: cubeVM)
 
+                #if os(visionOS)
                 Button("Calibrate") {
-                    cubeVM.calibrate()
+                    Task {
+                        await openImmersiveSpace(id: CalibrateView.spaceID)
+                    }
                 }
 
-                #if os(visionOS)
                 Toggle("Solve Mode", isOn: $isSolving)
                     .onChange(of: isSolving) { _, isSolving in
                         Task {
                             if isSolving {
-                                cubeVM.makeCurrent()
                                 await openImmersiveSpace(id: SolveView.spaceID)
                             } else {
                                 await dismissImmersiveSpace()
@@ -227,6 +234,10 @@ struct CubeView: View {
                         }
                     }
                     .fixedSize(horizontal: true, vertical: false)
+                #else
+                Button("Calibrate") {
+                    cubeVM.calibrate()
+                }
                 #endif
             } else {
                 ProgressView("Loading gyro")
@@ -234,6 +245,9 @@ struct CubeView: View {
         }
         .task {
             await cubeVM.appear()
+        }
+        .onAppear {
+            cubeVM.makeCurrent()
         }
         .onChange(of: isSolved) { old, new in
             guard old != new else { return }
@@ -254,24 +268,303 @@ struct CubeRealityView: View {
 
     var body: some View {
         RealityView { content in
-            let cubeeSize = 0.0575
-
-            let size: Float
-            #if os(visionOS)
-            size = Float(cubeeSize)
-            #else
-            size = 1
-            #endif
-            let mesh = MeshResource.generateBox(width: size, height: size, depth: size, splitFaces: true)
-            let colors: [SimpleMaterial.Color] = [.blue, .white, .green, .yellow, .orange, .red]
-            let materials = colors.map { SimpleMaterial(color: $0, roughness: 1.0, isMetallic: false) }
-            let entity = ModelEntity(mesh: mesh, materials: materials)
+            let entity = CubeEntity(cubeVM: cubeVM)
             content.add(entity)
+        }
+    }
+}
+
+final class CubeEntity: Entity {
+    init(cubeVM: CubeViewModel?) {
+        super.init()
+        self.setup(cubeVM: cubeVM)
+    }
+
+    required init() {
+        super.init()
+        self.setup(cubeVM: nil)
+    }
+
+    private func setup(cubeVM: CubeViewModel?) {
+        let cubeSize: Float = 0.0575
+        let size: Float
+        #if os(visionOS)
+        size = Float(cubeSize)
+        #else
+        size = 1
+        #endif
+
+        let relativeCornerRadius: Float = 0.05
+        let relativePadding: Float = 1.0
+
+        let cubeeSize = size / 3
+        let cubeeMesh = MeshResource.generateBox(
+            width: cubeeSize,
+            height: cubeeSize,
+            depth: cubeeSize,
+            cornerRadius: cubeeSize * relativeCornerRadius,
+            splitFaces: true
+        )
+        let faceOrder: [Face] = [.front, .top, .back, .bottom, .right, .left]
+
+        let centerEntities = Face.allCases.map { loc in
+            let colors = faceOrder.map { loc == $0 ? $0.color : .black }
+            let materials = colors.map { SimpleMaterial(color: $0, roughness: 1.0, isMetallic: false) }
+            let entity = ModelEntity(mesh: cubeeMesh, materials: materials)
+            entity.transform.translation = loc.offset * cubeeSize * relativePadding
+            self.addChild(entity)
+            return entity
+        }
+
+        let cornerEntities = CornerLocation.allCases.map { loc in
+            let colors: [SimpleMaterial.Color] = faceOrder.map { loc.faces.contains($0) ? $0.color : .black }
+            let materials = colors.map { SimpleMaterial(color: $0, roughness: 1.0, isMetallic: false) }
+            let entity = ModelEntity(mesh: cubeeMesh, materials: materials)
+            self.addChild(entity)
+            return entity
+        }
+
+        let edgeEntities = EdgeLocation.allCases.map { loc in
+            let colors: [SimpleMaterial.Color] = faceOrder.map { loc.faces.contains($0) ? $0.color : .black }
+            let materials = colors.map { SimpleMaterial(color: $0, roughness: 1.0, isMetallic: false) }
+            let entity = ModelEntity(mesh: cubeeMesh, materials: materials)
+            self.addChild(entity)
+            return entity
+        }
+
+        if let cubeVM {
             observeChanges {
-                if let orientation = cubeVM.orientation {
-                    entity.orientation = simd_quatf(vector: simd_float4(orientation.vector))
+                let cube = cubeVM.rsCube
+
+                for (animation, end) in animations.values {
+                    // complete current animations
+                    animation.time = .greatestFiniteMagnitude
+                    animation.speed = .greatestFiniteMagnitude
+                }
+
+                let move = cubeVM.lastMove
+                cubeVM.lastMove = nil
+
+                if let move {
+                    let center = centerEntities[move.face.rawValue]
+                    center.transform.rotation = .init(.identity)
+                    move.animate(entity: center, start: center.transform)
+                }
+
+                // the location that the corner will be in
+                for cornerDrawLocation in CornerLocation.allCases {
+                    let corner = cube.corners[cornerDrawLocation]
+                    // the corner that will be in this location
+                    let cornerSourceLocation = corner.location
+                    let cornerEntity = cornerEntities[cornerSourceLocation.rawValue]
+
+                    let startTransform = cornerEntity.transform
+
+                    cornerEntity.transform.translation = cornerDrawLocation.offset * cubeeSize * relativePadding
+
+                    let sourceRotation = cornerSourceLocation.referenceRotation
+                    let drawRotation = cornerDrawLocation.referenceRotation
+                    let degrees: Double = switch corner.orientation {
+                    case .correct: 0
+                    case .rotatedClockwise: -120
+                    case .rotatedCounterClockwise: 120
+                    }
+                    let orient = Rotation3D(angle: .degrees(degrees), axis: .xyz)
+                    // inverse of sourceRotation => rotate corner to top-right-front
+                    // orient => rotate around top-right-front axis as needed
+                    // otherRotation => rotate corner to match drawn
+                    cornerEntity.transform.rotation = simd_quatf(drawRotation * orient * sourceRotation.inverse)
+
+                    if let move, cornerDrawLocation.faces.contains(move.face) {
+                        move.animate(entity: cornerEntity, start: startTransform)
+                    }
+                }
+
+                for edgeDrawLocation in EdgeLocation.allCases {
+                    let edge = cube.edges[edgeDrawLocation]
+                    let edgeSourceLocation = edge.location
+                    let edgeEntity = edgeEntities[edgeSourceLocation.rawValue]
+
+                    let startTransform = edgeEntity.transform
+
+                    edgeEntity.transform.translation = edgeDrawLocation.offset * cubeeSize * relativePadding
+
+                    let sourceRotation = edgeSourceLocation.referenceRotation
+                    let drawRotation = edgeDrawLocation.referenceRotation
+                    let degrees: Double = edge.orientation == .flipped ? 180 : 0
+                    let orient = Rotation3D(angle: .degrees(degrees), axis: .yz)
+                    edgeEntity.transform.rotation = simd_quatf(drawRotation * orient * sourceRotation.inverse)
+
+                    if let move, edgeDrawLocation.faces.contains(move.face) {
+                        move.animate(entity: edgeEntity, start: startTransform)
+                    }
                 }
             }
+
+            observeChanges { [weak self] in
+                guard let self else { return }
+                if let orientation = cubeVM.orientation {
+                    self.orientation = simd_quatf(vector: simd_float4(orientation.vector))
+                }
+            }
+        }
+    }
+}
+
+@MainActor private var animations: [UInt64: (AnimationPlaybackController, Transform)] = [:]
+
+extension Move {
+    @MainActor fileprivate func animate(entity: Entity, start: Transform) {
+        let startT = animations[entity.id]?.1 ?? start
+        let end = entity.transform
+        // TODO: fix jank when making moves fast in sequence
+        // can see this by extending the duration to 1.0.
+        // we might need to stop() the current `animations[entity]` in
+        // the observe block before starting the new one. but we have to
+        // wait until the anim reaches the end before stopping
+        // (so probably like, one tick).
+        let animation = OrbitAnimation(
+            duration: 0.1,
+            axis: face.offset,
+            startTransform: startT,
+            spinClockwise: magnitude != .counterClockwiseQuarterTurn,
+            orientToPath: true,
+            rotationCount: magnitude == .halfTurn ? 0.5 : 0.25,
+            bindTarget: .transform
+        )
+        let resource = try! AnimationResource.generate(with: animation)
+        let cont = entity.playAnimation(resource)
+        animations[entity.id] = (cont, end)
+    }
+}
+
+extension CornerLocation {
+    fileprivate var xFace: Face {
+        switch self {
+        case .topRightFront, .topRightBack, .bottomRightBack, .bottomRightFront:
+            .right
+        case .topLeftBack, .topLeftFront, .bottomLeftBack, .bottomLeftFront:
+            .left
+        }
+    }
+
+    fileprivate var yFace: Face {
+        switch self {
+        case .topLeftBack, .topLeftFront, .topRightBack, .topRightFront:
+            .top
+        case .bottomLeftBack, .bottomLeftFront, .bottomRightBack, .bottomRightFront:
+            .bottom
+        }
+    }
+
+    fileprivate var zFace: Face {
+        switch self {
+        case .topRightFront, .topLeftFront, .bottomLeftFront, .bottomRightFront:
+            .front
+        case .topRightBack, .topLeftBack, .bottomLeftBack, .bottomRightBack:
+            .back
+        }
+    }
+
+    fileprivate var faces: Set<Face> {
+        [xFace, yFace, zFace]
+    }
+
+    fileprivate var offset: SIMD3<Float> {
+        faces.map(\.offset).reduce(.zero, +)
+    }
+
+    // the transform required to rotate the top-right-front corner to this corner
+    fileprivate var referenceRotation: Rotation3D {
+        let frontFace: Face = switch self {
+        case .topRightFront: .front
+        case .topLeftFront: .left
+        case .topLeftBack: .back
+        case .topRightBack: .right
+        case .bottomRightFront: .right
+        case .bottomLeftFront: .front
+        case .bottomLeftBack: .left
+        case .bottomRightBack: .back
+        }
+        return Rotation3D(
+            forward: .init(frontFace.offset),
+            up: .init(yFace.offset)
+        )
+    }
+}
+
+extension EdgeLocation {
+    fileprivate var xFace: Face? {
+        switch self {
+        case .topRight, .bottomRight, .middleRightBack, .middleRightFront: .right
+        case .topLeft, .bottomLeft, .middleLeftBack, .middleLeftFront: .left
+        case .topFront, .topBack, .bottomBack, .bottomFront: nil
+        }
+    }
+
+    fileprivate var yFace: Face? {
+        switch self {
+        case .topBack, .topFront, .topLeft, .topRight: .top
+        case .bottomBack, .bottomFront, .bottomLeft, .bottomRight: .bottom
+        case .middleLeftBack, .middleLeftFront, .middleRightBack, .middleRightFront: nil
+        }
+    }
+
+    fileprivate var zFace: Face? {
+        switch self {
+        case .topFront, .bottomFront, .middleLeftFront, .middleRightFront: .front
+        case .topBack, .bottomBack, .middleLeftBack, .middleRightBack: .back
+        case .topRight, .topLeft, .bottomRight, .bottomLeft: nil
+        }
+    }
+
+    fileprivate var faces: Set<Face> {
+        Set([xFace, yFace, zFace].compactMap(\.self))
+    }
+
+    fileprivate var offset: SIMD3<Float> {
+        faces.map(\.offset).reduce(.zero, +)
+    }
+
+    // the transform required to rotate the top-front edge to this edge
+    fileprivate var referenceRotation: Rotation3D {
+        // follows Kociemba's definition of reference facelets
+        let referenceFace: Face =
+            faces.intersection([.top, .bottom]).first ??
+            faces.intersection([.front, .back]).first!
+
+        let otherFace: Face =
+            faces.subtracting([referenceFace]).first!
+
+        return Rotation3D(
+            forward: .init(otherFace.offset),
+            up: .init(referenceFace.offset)
+        )
+    }
+}
+
+extension Face {
+    fileprivate var offset: SIMD3<Float> {
+        switch self {
+        case .top: [0, 1, 0]
+        case .bottom: [0, -1, 0]
+        case .left: [-1, 0, 0]
+        case .right: [1, 0, 0]
+        case .front: [0, 0, 1]
+        case .back: [0, 0, -1]
+        }
+    }
+
+    // these colors are aligned with the GAN face definitions.
+    // eg, when GAN sends us a 'U' it means the white face.
+    fileprivate var color: SimpleMaterial.Color {
+        switch self {
+        case .top: .white
+        case .bottom: .yellow
+        case .left: .orange
+        case .right: .red
+        case .front: .green
+        case .back: .blue
         }
     }
 }

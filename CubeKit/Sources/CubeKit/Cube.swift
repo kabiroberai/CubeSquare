@@ -87,7 +87,7 @@ public struct CornerPiece: Equatable, Sendable {
     }
 }
 
-public enum Face: CaseIterable, Sendable {
+public enum Face: Int, CaseIterable, Sendable {
     case top
     case bottom
     case left

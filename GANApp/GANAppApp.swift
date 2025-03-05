@@ -14,6 +14,13 @@ struct GANAppApp: App {
             }
         }
         .immersionStyle(selection: .constant(.mixed), in: .mixed)
+
+        ImmersiveSpace(id: CalibrateView.spaceID) {
+            if let cube = CubeViewModelManager.shared.current {
+                CalibrateView(cubeVM: cube)
+            }
+        }
+        .immersionStyle(selection: .constant(.mixed), in: .mixed)
         #endif
     }
 }
