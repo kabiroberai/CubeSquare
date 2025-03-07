@@ -379,6 +379,18 @@ public struct Move: Sendable {
     }
 }
 
+public struct MoveSeries: Sendable {
+    public var values: [Move]
+
+    public init(values: [Move]) {
+        self.values = values
+    }
+
+    public func inverse() -> MoveSeries {
+        MoveSeries(values: values.reversed().map(\.inverse))
+    }
+}
+
 // These are based on Kociemba's definition of orientation
 // https://web.archive.org/web/20220124065317/https://kociemba.org/math/cubielevel.htm
 extension Face {
@@ -460,10 +472,18 @@ extension Cube {
         }
     }
 
+    public mutating func apply(_ moves: MoveSeries) {
+        apply(moves.values)
+    }
+
     public func applying(_ moves: [Move]) -> Cube {
         var cube = self
         cube.apply(moves)
         return cube
+    }
+
+    public func applying(_ moves: MoveSeries) -> Cube {
+        applying(moves.values)
     }
 }
 
@@ -531,7 +551,7 @@ extension Face: LosslessStringConvertible {
 }
 
 extension Move: LosslessStringConvertible {
-    public init?(_ string: String) {
+    public init?(_ string: some StringProtocol) {
         guard string.count <= 2,
               let firstCharacter = string.first,
               let face = Face("\(firstCharacter)")
@@ -554,9 +574,15 @@ extension Move: LosslessStringConvertible {
     }
 }
 
-extension Collection where Iterator.Element == Move {
-    public var inverse: [Move] {
-        return self.reversed().map { $0.inverse }
+extension MoveSeries: LosslessStringConvertible {
+    public init?(_ description: some StringProtocol) {
+        guard let moves = description.split(separator: " ").map({ Move($0) }) as? [Move]
+              else { return nil }
+        self.values = moves
+    }
+
+    public var description: String {
+        values.map { "\($0)" }.joined(separator: " ")
     }
 }
 
