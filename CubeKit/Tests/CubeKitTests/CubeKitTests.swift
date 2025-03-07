@@ -65,14 +65,17 @@ import Testing
     #expect(corners.all[1] == piece)
 }
 
-@Test func canScramble() async throws {
+@Test func canScrambleAndSolve() async throws {
     // this test will fail 1 in 43 quintillion times.
     // if you encounter a failure, please file a GitHub
     // issue and include your prediction for next week's
     // lottery numbers.
-    for _ in 0..<100 {
+    for _ in 0..<10 {
         let cube = Cube.scrambled()
         #expect(cube != .solved)
+        let solution = try await cube.solution()
+        let solved = cube.applying(solution)
+        #expect(solved == .solved)
     }
 }
 
@@ -104,4 +107,12 @@ import Testing
     let facelets = Cube.Facelets(raw)!
     let cube = try Cube(facelets: facelets)
     #expect(cube.facelets().description == raw)
+}
+
+@Test func testSolution() async throws {
+    var cube = Cube()
+    cube.apply(MoveSeries("U F R2 B' D2 L")!)
+    let solution = try await cube.solution()
+    #expect(solution.description == "L' D2 F D2 B R2 F2 U2 B2 L2 B2 U")
+    #expect(cube.applying(solution) == .solved)
 }
