@@ -127,7 +127,15 @@ public struct EdgePieceCollection: Equatable, Sendable {
     }
 
     public var all: [EdgePiece] {
-        EdgeLocation.allCases.map { self[$0] }
+        get {
+            EdgeLocation.allCases.map { self[$0] }
+        }
+        set {
+            assert(EdgeLocation.allCases.count == newValue.count)
+            for (location, value) in zip(EdgeLocation.allCases, newValue) {
+                self[location] = value
+            }
+        }
     }
 
     public static let solved = EdgePieceCollection(
@@ -173,7 +181,15 @@ public struct CornerPieceCollection: Equatable, Sendable {
     }
 
     public var all: [CornerPiece] {
-        CornerLocation.allCases.map { self[$0] }
+        get {
+            CornerLocation.allCases.map { self[$0] }
+        }
+        set {
+            assert(CornerLocation.allCases.count == newValue.count)
+            for (location, value) in zip(CornerLocation.allCases, newValue) {
+                self[location] = value
+            }
+        }
     }
 
     public static let solved = CornerPieceCollection(

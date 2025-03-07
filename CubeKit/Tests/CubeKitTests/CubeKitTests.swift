@@ -55,3 +55,23 @@ import Testing
     let fr = Cube().applying([Move(face: .front), Move(face: .right)])
     #expect(cubeState == fr)
 }
+
+@Test func allPieces() async throws {
+    var corners = CornerPieceCollection.solved
+    var piece = corners.all[1]
+    piece.location = .bottomRightFront
+    piece.orientation = .rotatedClockwise
+    corners.all[1] = piece
+    #expect(corners.all[1] == piece)
+}
+
+@Test func canScramble() async throws {
+    // this test will fail 1 in 43 quintillion times.
+    // if you encounter a failure, please file a GitHub
+    // issue and include your prediction for next week's
+    // lottery numbers.
+    for _ in 0..<100 {
+        let cube = Cube.scrambled()
+        #expect(cube != .solved)
+    }
+}
