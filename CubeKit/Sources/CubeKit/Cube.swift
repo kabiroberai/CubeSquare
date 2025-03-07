@@ -89,10 +89,10 @@ public struct CornerPiece: Equatable, Sendable {
 
 public enum Face: Int, CaseIterable, Sendable {
     case top
-    case bottom
-    case left
     case right
     case front
+    case bottom
+    case left
     case back
 }
 
@@ -235,6 +235,24 @@ extension EdgeLocation {
         case .back: [.topBack, .middleLeftBack, .bottomBack, .middleRightBack]
         }
     }
+
+    // reference facelet first, then other
+    public var faces: [Face] {
+        switch self {
+        case .topRight: [.top, .right]
+        case .topFront: [.top, .front]
+        case .topLeft: [.top, .left]
+        case .topBack: [.top, .back]
+        case .bottomRight: [.bottom, .right]
+        case .bottomFront: [.bottom, .front]
+        case .bottomLeft: [.bottom, .left]
+        case .bottomBack: [.bottom, .back]
+        case .middleRightFront: [.front, .right]
+        case .middleLeftFront: [.front, .left]
+        case .middleLeftBack: [.back, .left]
+        case .middleRightBack: [.back, .right]
+        }
+    }
 }
 
 extension CornerLocation {
@@ -249,30 +267,18 @@ extension CornerLocation {
         case .back: [.topRightBack, .topLeftBack, .bottomLeftBack, .bottomRightBack]
         }
     }
-}
 
-extension Face {
-    fileprivate func contains(_ edgeLocation: EdgeLocation) -> Bool {
-        switch (self, edgeLocation) {
-        case (.top, .topRight), (.top, .topFront), (.top, .topLeft), (.top, .topBack): return true
-        case (.bottom, .bottomFront), (.bottom, .bottomRight), (.bottom, .bottomBack), (.bottom, .bottomLeft): return true
-        case (.left, .topLeft), (.left, .middleLeftFront), (.left, .bottomLeft), (.left, .middleLeftBack): return true
-        case (.right, .topRight), (.right, .middleRightBack), (.right, .bottomRight), (.right, .middleRightFront): return true
-        case (.front, .topFront), (.front, .middleRightFront), (.front, .bottomFront), (.front, .middleLeftFront): return true
-        case (.back, .topBack), (.back, .middleLeftBack), (.back, .bottomBack), (.back, .middleRightBack): return true
-        default: return false
-        }
-    }
-
-    fileprivate func contains(_ cornerLocation: CornerLocation) -> Bool {
-        switch (self, cornerLocation) {
-        case (.top, .topRightFront), (.top, .topLeftFront), (.top, .topLeftBack), (.top, .topRightBack): return true
-        case (.bottom, .bottomLeftFront), (.bottom, .bottomRightFront), (.bottom, .bottomRightBack), (.bottom, .bottomLeftBack): return true
-        case (.left, .topLeftBack), (.left, .topLeftFront), (.left, .bottomLeftFront), (.left, .bottomLeftBack): return true
-        case (.right, .topRightFront), (.right, .topRightBack), (.right, .bottomRightBack), (.right, .bottomRightFront): return true
-        case (.front, .topLeftFront), (.front, .topRightFront), (.front, .bottomRightFront), (.front, .bottomLeftFront): return true
-        case (.back, .topRightBack), (.back, .topLeftBack), (.back, .bottomLeftBack), (.back, .bottomRightBack): return true
-        default: return false
+    // reference facelet first, then clockwise
+    public var faces: [Face] {
+        switch self {
+        case .topRightFront: [.top, .right, .front]
+        case .topLeftFront: [.top, .front, .left]
+        case .topLeftBack: [.top, .left, .back]
+        case .topRightBack: [.top, .back, .right]
+        case .bottomRightFront: [.bottom, .front, .right]
+        case .bottomLeftFront: [.bottom, .left, .front]
+        case .bottomLeftBack: [.bottom, .back, .left]
+        case .bottomRightBack: [.bottom, .right, .back]
         }
     }
 }

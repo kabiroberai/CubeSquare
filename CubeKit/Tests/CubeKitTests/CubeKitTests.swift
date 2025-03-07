@@ -75,3 +75,33 @@ import Testing
         #expect(cube != .solved)
     }
 }
+
+@Test func solvedToFacelets() async throws {
+    let solved = Cube.solved.facelets().description
+    #expect(solved == "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB")
+    let reconstructed = try Cube(facelets: .init(solved)!)
+    #expect(reconstructed == .solved)
+}
+
+@Test func movesToFacelets() async throws {
+    var cube = Cube()
+    // "U F R2 B' D2 L"
+    for move in ["U", "F", "R2", "B'", "D2", "L"] {
+        cube.apply(Move(move)!)
+    }
+    #expect(cube.corners.all.map(\.location.rawValue) == [7, 6, 2, 1, 0, 5, 3, 4])
+    #expect(cube.corners.all.map(\.orientation.rawValue) == [0, 2, 2, 2, 0, 1, 1, 1])
+    #expect(cube.edges.all.map(\.location.rawValue) == [4, 9, 7, 10, 6, 0, 5, 8, 11, 1, 3, 2])
+    #expect(cube.edges.all.map(\.orientation.rawValue) == [0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1])
+    #expect(cube.facelets().description == "LLFBUDBLDRRURRUFLDLFBUFBLRRFUUFDDRRRBDDBLFBDDLBULBUFFU")
+
+    let reconstructed = try Cube(facelets: .init("LLFBUDBLDRRURRUFLDLFBUFBLRRFUUFDDRRRBDDBLFBDDLBULBUFFU")!)
+    #expect(reconstructed == cube)
+}
+
+@Test func randomToFacelets() async throws {
+    let raw = "BBBLUULUURRUFRRRDRUFFFFRDDFLFDDDRDDDUUFBLLLLFRULBBLBBB"
+    let facelets = Cube.Facelets(raw)!
+    let cube = try Cube(facelets: facelets)
+    #expect(cube.facelets().description == raw)
+}
