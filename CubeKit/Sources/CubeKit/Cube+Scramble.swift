@@ -72,7 +72,7 @@ extension PieceCollection {
         assert(self.orientationParity() == 0)
     }
 
-    // https://github.com/ldez/cubejs/blob/6b3da493894d9aed54f4c8aafccadbe676e745b5/lib/cube.js#L461
+    // https://github.com/ldez/cubejs/blob/6b3da493894d9aed54f4c8aafccadbe676e745b5/src/cube.coffee#L159
     fileprivate func numberOfSwaps() -> Int {
         var numSwaps = 0
 
