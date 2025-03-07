@@ -20,8 +20,12 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "CCubeKit"
+        ),
+        .target(
             name: "CubeKit",
             dependencies: [
+                "CCubeKit",
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "_CryptoExtras", package: "swift-crypto"),
             ],
