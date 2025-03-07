@@ -21,7 +21,7 @@ import Testing
 
 @Test func cryptor() async throws {
     let mac: [UInt8] = [122, 120, 65, 138, 154, 142]
-    let cryptor = GANCommonCryptor(key: GANConstants.ganKey1, iv: GANConstants.ganIV1, salt: mac)
+    let cryptor = try GANCommonCryptor(key: GANConstants.ganKey1, iv: GANConstants.ganIV1, salt: mac)
     let original: [UInt8] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     var data = original
     try cryptor.encrypt(&data)
