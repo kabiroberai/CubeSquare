@@ -435,37 +435,6 @@ final class CubeEntity: Entity {
 }
 
 extension CornerLocation {
-    fileprivate var xFace: Face {
-        switch self {
-        case .topRightFront, .topRightBack, .bottomRightBack, .bottomRightFront:
-            .right
-        case .topLeftBack, .topLeftFront, .bottomLeftBack, .bottomLeftFront:
-            .left
-        }
-    }
-
-    fileprivate var yFace: Face {
-        switch self {
-        case .topLeftBack, .topLeftFront, .topRightBack, .topRightFront:
-            .top
-        case .bottomLeftBack, .bottomLeftFront, .bottomRightBack, .bottomRightFront:
-            .bottom
-        }
-    }
-
-    fileprivate var zFace: Face {
-        switch self {
-        case .topRightFront, .topLeftFront, .bottomLeftFront, .bottomRightFront:
-            .front
-        case .topRightBack, .topLeftBack, .bottomLeftBack, .bottomRightBack:
-            .back
-        }
-    }
-
-    fileprivate var faces: Set<Face> {
-        [xFace, yFace, zFace]
-    }
-
     fileprivate var offset: SIMD3<Float> {
         faces.map(\.offset).reduce(.zero, +)
     }
@@ -473,52 +442,14 @@ extension CornerLocation {
     // the transform required to rotate the top-right-front corner to this corner
     // when in the "correct" orientation
     fileprivate var referenceRotation: Rotation3D {
-        let frontFace: Face = switch self {
-        case .topRightFront: .front
-        case .topLeftFront: .left
-        case .topLeftBack: .back
-        case .topRightBack: .right
-        case .bottomRightFront: .right
-        case .bottomLeftFront: .front
-        case .bottomLeftBack: .left
-        case .bottomRightBack: .back
-        }
-        return Rotation3D(
-            forward: .init(frontFace.offset),
-            up: .init(yFace.offset)
+        Rotation3D(
+            forward: .init(faces[2].offset),
+            up: .init(faces[0].offset)
         )
     }
 }
 
 extension EdgeLocation {
-    fileprivate var xFace: Face? {
-        switch self {
-        case .topRight, .bottomRight, .middleRightBack, .middleRightFront: .right
-        case .topLeft, .bottomLeft, .middleLeftBack, .middleLeftFront: .left
-        case .topFront, .topBack, .bottomBack, .bottomFront: nil
-        }
-    }
-
-    fileprivate var yFace: Face? {
-        switch self {
-        case .topBack, .topFront, .topLeft, .topRight: .top
-        case .bottomBack, .bottomFront, .bottomLeft, .bottomRight: .bottom
-        case .middleLeftBack, .middleLeftFront, .middleRightBack, .middleRightFront: nil
-        }
-    }
-
-    fileprivate var zFace: Face? {
-        switch self {
-        case .topFront, .bottomFront, .middleLeftFront, .middleRightFront: .front
-        case .topBack, .bottomBack, .middleLeftBack, .middleRightBack: .back
-        case .topRight, .topLeft, .bottomRight, .bottomLeft: nil
-        }
-    }
-
-    fileprivate var faces: Set<Face> {
-        Set([xFace, yFace, zFace].compactMap(\.self))
-    }
-
     fileprivate var offset: SIMD3<Float> {
         faces.map(\.offset).reduce(.zero, +)
     }
@@ -526,17 +457,9 @@ extension EdgeLocation {
     // the transform required to rotate the top-front edge to this edge
     // when in the "correct" orientation
     fileprivate var referenceRotation: Rotation3D {
-        // follows Kociemba's definition of reference facelets
-        let referenceFace: Face =
-            faces.intersection([.top, .bottom]).first ??
-            faces.intersection([.front, .back]).first!
-
-        let otherFace: Face =
-            faces.subtracting([referenceFace]).first!
-
-        return Rotation3D(
-            forward: .init(otherFace.offset),
-            up: .init(referenceFace.offset)
+        Rotation3D(
+            forward: .init(faces[1].offset),
+            up: .init(faces[0].offset)
         )
     }
 }
