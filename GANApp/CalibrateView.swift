@@ -10,9 +10,10 @@ struct CalibrateView: View {
 
     enum Phase {
         case waiting
-        case started(Date)
-        case solved(TimeInterval)
+        case calibrated
     }
+    
+    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
 
     @State var phase: Phase = .waiting
     @State var viewModel = CalibrateViewModel()
@@ -20,8 +21,20 @@ struct CalibrateView: View {
 
     var body: some View {
         RealityView { content in
-            content.add(CubeEntity())
+            viewModel.centerNode.transform.translation = [0, 0.7, -0.35]
+            content.add(viewModel.centerNode)
+
+            Task {
+                try? await Task.sleep(for: .seconds(3))
+                cubeVM.calibrate()
+                phase = .calibrated
+                viewModel.centerNode.components.set(OpacityComponent(opacity: 0.7))
+                try? await Task.sleep(for: .seconds(3))
+                await dismissImmersiveSpace()
+            }
         } update: { content in
+            guard phase == .calibrated else { return }
+
             guard let leftMiddle = viewModel.leftHand?.transform(for: .middleFingerTip),
                   let leftThumb = viewModel.leftHand?.transform(for: .thumbTip),
                   let rightMiddle = viewModel.rightHand?.transform(for: .middleFingerTip),
@@ -51,17 +64,14 @@ struct CalibrateView: View {
 
 @Observable @MainActor final class CalibrateViewModel {
     let centerNode: Entity
-    let cubeNode: ModelEntity
+    let cubeNode: Entity
 
     init() {
         let node = Entity()
 
-        let cubeMaterial = SimpleMaterial(color: .init(white: 1, alpha: 0.1), isMetallic: false)
-        let cubeMesh = MeshResource.generateBox(size: 0.0575)
-        cubeNode = ModelEntity(mesh: cubeMesh, materials: [cubeMaterial])
-        cubeNode.position.y += 0.12
-        cubeNode.position.x -= 0.0575 * 3
+        cubeNode = CubeEntity(cubeVM: CubeViewModelManager.shared.current, trackOrientation: false)
         node.addChild(cubeNode)
+        node.components.set(OpacityComponent(opacity: 0.3))
 
         centerNode = node
     }

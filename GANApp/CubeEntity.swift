@@ -23,10 +23,13 @@ final class CubeEntity: Entity {
         centerEntities + cornerEntities + edgeEntities
     }
 
-    convenience init(cubeVM: CubeViewModel?) {
+    convenience init(cubeVM: CubeViewModel?, trackOrientation: Bool = true) {
         self.init()
         if let cubeVM {
-            self.track(cubeVM: cubeVM)
+            self.trackConfiguration(cubeVM: cubeVM)
+            if trackOrientation {
+                self.trackOrientation(cubeVM: cubeVM)
+            }
         }
     }
 
@@ -72,12 +75,7 @@ final class CubeEntity: Entity {
         self.setCube(.solved)
     }
 
-    private func track(cubeVM: CubeViewModel) {
-        observeChanges { [weak self] in
-            guard let self else { return }
-            setCube(cubeVM.rsCube, move: cubeVM.lastMove)
-        }
-
+    private func trackOrientation(cubeVM: CubeViewModel) {
         observeChanges { [weak self] in
             guard let self else { return }
 
@@ -86,6 +84,13 @@ final class CubeEntity: Entity {
             } else {
                 simd_quatf(.identity)
             }
+        }
+    }
+
+    private func trackConfiguration(cubeVM: CubeViewModel) {
+        observeChanges { [weak self] in
+            guard let self else { return }
+            setCube(cubeVM.rsCube, move: cubeVM.lastMove)
         }
     }
 

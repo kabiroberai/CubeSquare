@@ -1,6 +1,7 @@
 import CubeKit
 import SwiftUI
 import simd
+import RealityKit
 
 struct ContentView: View {
     @State private var cubeVM: CubeViewModel?
@@ -148,18 +149,12 @@ final class CubeViewModel {
 struct CubeView: View {
     let cubeVM: CubeViewModel
 
-    @State private var startTime: Date?
-
     @State private var isSolving = false
 
     #if os(visionOS)
     @Environment(\.openImmersiveSpace) var openImmersiveSpace
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
     #endif
-
-    var isSolved: Bool {
-        cubeVM.rsCube == .solved
-    }
 
     var body: some View {
         VStack {
@@ -220,6 +215,7 @@ struct CubeView: View {
                 #if os(visionOS)
                 Button("Calibrate") {
                     Task {
+                        await dismissImmersiveSpace()
                         await openImmersiveSpace(id: CalibrateView.spaceID)
                     }
                 }
@@ -250,19 +246,8 @@ struct CubeView: View {
         .onAppear {
             cubeVM.makeCurrent()
         }
-        .onChange(of: isSolved) { old, new in
-            guard old != new else { return }
-            if new {
-                
-            }
-        }
     }
 }
-
-#if os(visionOS)
-import ARKit
-#endif
-import RealityKit
 
 struct CubeRealityView: View {
     let cubeVM: CubeViewModel
