@@ -29,7 +29,7 @@ struct CalibrateView: View {
                 cubeVM.calibrate()
                 phase = .calibrated
                 viewModel.centerNode.components.set(OpacityComponent(opacity: 0.7))
-                try? await Task.sleep(for: .seconds(3))
+                try? await Task.sleep(for: .seconds(5))
                 await dismissImmersiveSpace()
             }
         } update: { content in
@@ -41,13 +41,10 @@ struct CalibrateView: View {
                   let rightThumb = viewModel.rightHand?.transform(for: .thumbTip)
                   else { return }
 
-            let scale = SIMD3<Float>(repeating: 1)
-            let rotation = simd_quatf(from: .init(x: 0, y: 0, z: 0), to: .init(x: 0, y: 1, z: 0))
-
             let allJoints = [leftMiddle, leftThumb, rightMiddle, rightThumb]
             let translation = allJoints.map(\.translation).reduce(.zero, +) / Float(allJoints.count)
 
-            viewModel.centerNode.transform = Transform(scale: scale, rotation: rotation, translation: translation)
+            viewModel.centerNode.transform = Transform(translation: translation)
             viewModel.cubeNode.transform.rotation = cubeVM.orientation.map {
                 simd_quatf(vector: simd_float4($0.vector))
             } ?? simd_quatf()

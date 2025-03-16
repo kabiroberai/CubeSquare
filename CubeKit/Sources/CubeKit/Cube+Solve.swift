@@ -8,6 +8,10 @@ private actor CubeSolverCache {
     private let queue = DispatchSerialQueue(label: "com.kabiroberai.CubeSquare.solver-cache")
     private var hasCreatedCache = false
 
+    nonisolated var unownedExecutor: UnownedSerialExecutor {
+        queue.asUnownedSerialExecutor()
+    }
+
     private init() {}
 
     func cache() -> URL {
