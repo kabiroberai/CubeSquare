@@ -8,9 +8,9 @@ struct GANAppApp: App {
         }
 
         #if os(visionOS)
-        ImmersiveSpace(id: SolveView.spaceID) {
+        ImmersiveSpace(id: TimerView.spaceID) {
             if let cube = CubeViewModelManager.shared.current {
-                SolveView(cubeVM: cube)
+                TimerView(cubeVM: cube)
             }
         }
         .immersionStyle(selection: .constant(.mixed), in: .mixed)

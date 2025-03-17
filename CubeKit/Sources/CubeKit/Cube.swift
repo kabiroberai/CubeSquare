@@ -349,8 +349,8 @@ public func -(lhs: CornerPiece, rhs: CornerPiece.Orientation) -> CornerPiece {
     return CornerPiece(lhs.location, orientation: lhs.orientation - rhs)
 }
 
-public struct Move: Sendable {
-    public enum Magnitude: Sendable {
+public struct Move: Sendable, Hashable {
+    public enum Magnitude: Sendable, Hashable {
         case clockwiseQuarterTurn
         case halfTurn
         case counterClockwiseQuarterTurn

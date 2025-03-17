@@ -50,34 +50,6 @@ public struct GANGyroData: Hashable, Sendable {
     public var angularVelocity: AngularVelocity?
 }
 
-public struct GANMove: Hashable, Sendable, CustomStringConvertible {
-    public enum Face: Int, CustomStringConvertible, Sendable {
-        case up = 0, right, front, down, left, back
-
-        public var description: String {
-            switch self {
-            case .up: "U"
-            case .right: "R"
-            case .front: "F"
-            case .down: "D"
-            case .left: "L"
-            case .back: "B"
-            }
-        }
-    }
-
-    public enum Direction: Int, Sendable {
-        case clockwise = 0, anticlockwise
-    }
-
-    public var face: Face
-    public var direction: Direction
-
-    public var description: String {
-        "\(face)\(direction == .clockwise ? "" : "'")"
-    }
-}
-
 public struct GANFacelets: Hashable, Sendable {
     public var cp: [UInt8]
     public var co: [UInt8]
@@ -124,7 +96,7 @@ struct GANCubeEvent {
     enum Event: Hashable {
         case gyro(GANGyroData)
         // move[0] is the move that just happened. after that is the recent history.
-        case move([GANMove], serial: UInt8)
+        case move([Move], serial: UInt8)
         case battery(level: Int) // 0-100
         case hardware(GANHardware)
         case facelets(GANFacelets)
@@ -265,15 +237,15 @@ struct GANGen2Serializer: GANSerializer {
 
             let serial = event.readU8(bitOffset: 4)
 
-            let moves = (0..<7).compactMap { i -> GANMove? in
+            let moves = (0..<7).compactMap { i -> Move? in
                 let rawFace = event.readU8(bitOffset: 12 + 5 * i, bitCount: 4)
                 let rawDirection = event.readU8(bitOffset: 16 + 5 * i, bitCount: 1)
                 let elapsed = event.readU16(bitOffset: 47 + 16 * i)
                 // TODO: handle timestamp
                 _ = elapsed
-                guard let face = GANMove.Face(rawValue: Int(rawFace)) else { return nil }
-                let direction = GANMove.Direction(rawValue: Int(rawDirection))!
-                return GANMove(face: face, direction: direction)
+                guard let face = Face(rawValue: Int(rawFace)) else { return nil }
+                let direction = rawDirection == 0 ? Move.Magnitude.clockwiseQuarterTurn : .counterClockwiseQuarterTurn
+                return Move(face: face, magnitude: direction)
             }
 
             events.append(.move(moves, serial: serial))
@@ -489,9 +461,9 @@ public final class GANCube {
         }
     }
 
-    public var moves: some Publisher<GANMove, Never> {
+    public var moves: some Publisher<Move, Never> {
         // TODO: test diff > 1
-        events.scan(([], -1) as ([GANMove], Int)) { (lastMovesAndSerial, event) in
+        events.scan(([], -1) as ([Move], Int)) { (lastMovesAndSerial, event) in
             let lastSerial = lastMovesAndSerial.1
             guard case let .move(values, serial) = event.event else { return ([], lastSerial) }
             let diff = lastSerial == -1 ? 1 : min(Int(serial &- UInt8(lastSerial)), 7)

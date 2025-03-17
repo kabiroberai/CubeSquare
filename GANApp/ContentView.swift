@@ -102,19 +102,6 @@ final class CubeViewModel {
 
         @Sendable @MainActor func getMoves() async {
             for await move in cube.moves.values {
-                let face: Face = switch move.face {
-                case .back: .back
-                case .front: .front
-                case .left: .left
-                case .right: .right
-                case .down: .bottom
-                case .up: .top
-                }
-                let magnitude: Move.Magnitude = switch move.direction {
-                case .anticlockwise: .counterClockwiseQuarterTurn
-                case .clockwise: .clockwiseQuarterTurn
-                }
-                let move = Move(face: face, magnitude: magnitude)
                 lastMove = move
                 rsCube.apply(move)
             }
@@ -224,7 +211,7 @@ struct CubeView: View {
                     .onChange(of: isSolving) { _, isSolving in
                         Task {
                             if isSolving {
-                                await openImmersiveSpace(id: SolveView.spaceID)
+                                await openImmersiveSpace(id: TimerView.spaceID)
                             } else {
                                 await dismissImmersiveSpace()
                             }

@@ -4,9 +4,10 @@ import Foundation
 import SwiftUI
 import RealityKit
 import ARKit
+import CubeKit
 
-struct SolveView: View {
-    static let spaceID = "SOLVE"
+struct TimerView: View {
+    static let spaceID = "TIMER"
 
     enum Phase {
         case waiting
@@ -16,7 +17,7 @@ struct SolveView: View {
 
     @State private var boundsStore = TextBoundsStore()
     @State var phase: Phase = .waiting
-    @State var viewModel = SolveViewModel()
+    @State var viewModel = TimerViewModel()
     let cubeVM: CubeViewModel
 
     var body: some View {
@@ -29,13 +30,10 @@ struct SolveView: View {
                   let rightThumb = viewModel.rightHand?.transform(for: .thumbTip)
                   else { return }
 
-            let scale = SIMD3<Float>(repeating: 1)
-            let rotation = simd_quatf(from: .init(x: 0, y: 0, z: 0), to: .init(x: 0, y: 1, z: 0))
-
             let allJoints = [leftMiddle, leftThumb, rightMiddle, rightThumb]
             let translation = allJoints.map(\.translation).reduce(.zero, +) / Float(allJoints.count)
 
-            viewModel.centerNode.transform = Transform(scale: scale, rotation: rotation, translation: translation)
+            viewModel.centerNode.transform.translation = translation
             viewModel.cubeNode.transform.rotation = cubeVM.orientation.map {
                 simd_quatf(vector: simd_float4($0.vector))
             } ?? simd_quatf()
@@ -51,13 +49,6 @@ struct SolveView: View {
             let text = time.formatted(.number.precision(.fractionLength(3...3)))
             var attrText = AttributedString(text)
             attrText.uiKit.font = UIFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-//            let paragraphStyle = NSMutableParagraphStyle()
-//            paragraphStyle.alignment = .center
-//            attrText.setAttributes(AttributeContainer([
-//                .paragraphStyle: paragraphStyle
-//            ]))
-//            var textOptions = MeshResource.GenerateTextOptions()
-//            textOptions.containerFrame = CGRect(x: 0, y: 0, width: 0.0575 * 3 * 72, height: 0.0575 * 72)
             let textMesh = try! MeshResource(
                 extruding: attrText,
                 textOptions: MeshResource.GenerateTextOptions(),
@@ -129,7 +120,7 @@ extension HandAnchor {
     }
 }
 
-@Observable @MainActor final class SolveViewModel {
+@Observable @MainActor final class TimerViewModel {
     let centerNode: Entity
     let textModel: ModelEntity
     let cubeNode: ModelEntity
