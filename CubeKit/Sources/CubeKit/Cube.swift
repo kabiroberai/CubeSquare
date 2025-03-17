@@ -32,7 +32,7 @@ public enum EdgeLocation: Int, CaseIterable, Sendable {
     }
 }
 
-public struct EdgePiece: Equatable, Sendable {
+public struct EdgePiece: Hashable, Sendable {
     public enum Orientation: Int, CaseIterable, Sendable {
         case correct
         case flipped
@@ -71,7 +71,7 @@ public enum CornerLocation: Int, CaseIterable, Sendable {
     }
 }
 
-public struct CornerPiece: Equatable, Sendable {
+public struct CornerPiece: Hashable, Sendable {
     public enum Orientation: Int, CaseIterable, Sendable {
         case correct
         case rotatedClockwise
@@ -96,7 +96,7 @@ public enum Face: Int, CaseIterable, Sendable {
     case back
 }
 
-public struct EdgePieceCollection: Equatable, Sendable {
+public struct EdgePieceCollection: Hashable, Sendable {
     public var topRight: EdgePiece
     public var topFront: EdgePiece
     public var topLeft: EdgePiece
@@ -154,7 +154,7 @@ public struct EdgePieceCollection: Equatable, Sendable {
     )
 }
 
-public struct CornerPieceCollection: Equatable, Sendable {
+public struct CornerPieceCollection: Hashable, Sendable {
     public var topRightFront: CornerPiece
     public var topLeftFront: CornerPiece
     public var topLeftBack: CornerPiece
@@ -204,7 +204,7 @@ public struct CornerPieceCollection: Equatable, Sendable {
     )
 }
 
-public struct Cube: Equatable, Sendable {
+public struct Cube: Hashable, Sendable {
     public var edges: EdgePieceCollection
     public var corners: CornerPieceCollection
 

@@ -50,14 +50,6 @@ public struct GANGyroData: Hashable, Sendable {
     public var angularVelocity: AngularVelocity?
 }
 
-public struct GANFacelets: Hashable, Sendable {
-    public var cp: [UInt8]
-    public var co: [UInt8]
-    public var ep: [UInt8]
-    public var eo: [UInt8]
-    public var serial: UInt8
-}
-
 public struct BluetoothUUID: Hashable, ExpressibleByStringLiteral {
     public let string: String
 
@@ -99,7 +91,7 @@ struct GANCubeEvent {
         case move([Move], serial: UInt8)
         case battery(level: Int) // 0-100
         case hardware(GANHardware)
-        case facelets(GANFacelets)
+        case facelets(Cube, serial: UInt8)
     }
 
     var localTime: Date
@@ -168,7 +160,7 @@ struct GANGen2Serializer: GANSerializer {
         let now = Date()
         let kind = event.readU8(bitOffset: 0, bitCount: 4)
         var events: [GANCubeEvent.Event] = []
-        switch kind {
+        switchKind: switch kind {
         case 0x01: // GYRO
             let qw = event.readU16(bitOffset: 4)
             let qx = event.readU16(bitOffset: 20)
@@ -273,9 +265,27 @@ struct GANGen2Serializer: GANSerializer {
             ep.append(66 - ep.sum())
             eo.append((2 - (eo.sum() % 2)) % 2)
 
-            events.append(.facelets(
-                .init(cp: cp, co: co, ep: ep, eo: eo, serial: serial)
-            ))
+            // parse into cube
+            var cube = Cube()
+
+            // GAN uses Kociemba's representation, and so does our Cube type,
+            // so this is more or less a 1:1 mapping.
+
+            for (corner, (permutation, orientation)) in zip(CornerLocation.allCases, zip(cp, co)) {
+                guard let cornerLocation = CornerLocation(rawValue: Int(permutation)),
+                      let cornerOrientation = CornerPiece.Orientation(rawValue: Int(orientation))
+                      else { break switchKind }
+                cube.corners[corner] = CornerPiece(cornerLocation, orientation: cornerOrientation)
+            }
+
+            for (edge, (permutation, orientation)) in zip(EdgeLocation.allCases, zip(ep, eo)) {
+                guard let edgeLocation = EdgeLocation(rawValue: Int(permutation)),
+                      let edgeOrientation = EdgePiece.Orientation(rawValue: Int(orientation))
+                      else { break switchKind }
+                cube.edges[edge] = EdgePiece(edgeLocation, orientation: edgeOrientation)
+            }
+
+            events.append(.facelets(cube, serial: serial))
         case 0x05: // HARDWARE
             let hwMajor = event.readU8(bitOffset: 8)
             let hwMinor = event.readU8(bitOffset: 16)
@@ -445,9 +455,9 @@ public final class GANCube {
         }
     }
 
-    public func facelets() async throws -> GANFacelets {
+    public func facelets() async throws -> Cube {
         try await request(.requestFacelets) { event in
-            if case let .facelets(value) = event.event { value } else { nil }
+            if case let .facelets(value, _) = event.event { value } else { nil }
         }
     }
 
@@ -760,30 +770,5 @@ extension CBManagerState {
 extension Sequence where Element: AdditiveArithmetic {
     fileprivate func sum() -> Element {
         reduce(.zero, +)
-    }
-}
-
-extension GANFacelets {
-    public func cube() -> Cube? {
-        var cube = Cube()
-
-        // GAN uses Kociemba's representation, and so does our Cube type,
-        // so this is more or less a 1:1 mapping.
-
-        for (corner, (permutation, orientation)) in zip(CornerLocation.allCases, zip(cp, co)) {
-            guard let cornerLocation = CornerLocation(rawValue: Int(permutation)),
-                  let cornerOrientation = CornerPiece.Orientation(rawValue: Int(orientation))
-                  else { return nil }
-            cube.corners[corner] = CornerPiece(cornerLocation, orientation: cornerOrientation)
-        }
-
-        for (edge, (permutation, orientation)) in zip(EdgeLocation.allCases, zip(ep, eo)) {
-            guard let edgeLocation = EdgeLocation(rawValue: Int(permutation)),
-                  let edgeOrientation = EdgePiece.Orientation(rawValue: Int(orientation))
-                  else { return nil }
-            cube.edges[edge] = EdgePiece(edgeLocation, orientation: edgeOrientation)
-        }
-
-        return cube
     }
 }
