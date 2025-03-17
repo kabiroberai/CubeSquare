@@ -27,6 +27,16 @@ struct GANAppApp: App {
             }
         }
         .immersionStyle(selection: .constant(.mixed), in: .mixed)
+
+        ImmersiveSpace(id: SolveView.spaceID) {
+            if let cube = CubeViewModelManager.shared.current {
+                SolveView(cubeVM: cube)
+                    .task {
+                        await ImmersiveSpaceManager.shared.acquire(id: SolveView.spaceID)
+                    }
+            }
+        }
+        .immersionStyle(selection: .constant(.mixed), in: .mixed)
         #endif
     }
 }

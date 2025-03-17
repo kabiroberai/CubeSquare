@@ -244,6 +244,9 @@ struct ScenePicker: View {
 
             Label("Timer", systemImage: "timer")
                 .tag(TimerView.spaceID)
+
+            Label("Solve", systemImage: "brain")
+                .tag(SolveView.spaceID)
         } label: {
             Text("Home")
         }

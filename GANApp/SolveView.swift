@@ -4,35 +4,18 @@ import Foundation
 import SwiftUI
 import RealityKit
 import ARKit
+import CubeKit
 
-struct CalibrateView: View {
-    static let spaceID = "CALIBRATE"
+struct SolveView: View {
+    static let spaceID = "SOLVE"
 
-    enum Phase {
-        case waiting
-        case calibrated
-    }
-    
-    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
-
-    @State var phase: Phase = .waiting
-    @State var viewModel = CalibrateViewModel()
+    @State var viewModel = SolveViewModel()
     let cubeVM: CubeViewModel
 
     var body: some View {
         RealityView { content in
-            viewModel.centerNode.transform.translation = [0, 0.7, -0.35]
             content.add(viewModel.centerNode)
-
-            Task {
-                try? await Task.sleep(for: .seconds(3))
-                cubeVM.calibrate()
-                phase = .calibrated
-                viewModel.centerNode.components.set(OpacityComponent(opacity: 0.7))
-            }
         } update: { content in
-            guard phase == .calibrated else { return }
-
             guard let leftMiddle = viewModel.leftHand?.transform(for: .middleFingerTip),
                   let leftThumb = viewModel.leftHand?.transform(for: .thumbTip),
                   let rightMiddle = viewModel.rightHand?.transform(for: .middleFingerTip),
@@ -42,10 +25,17 @@ struct CalibrateView: View {
             let allJoints = [leftMiddle, leftThumb, rightMiddle, rightThumb]
             let translation = allJoints.map(\.translation).reduce(.zero, +) / Float(allJoints.count)
 
-            viewModel.centerNode.transform = Transform(translation: translation)
+            viewModel.centerNode.transform.translation = translation
             viewModel.cubeNode.transform.rotation = cubeVM.orientation.map {
                 simd_quatf(vector: simd_float4($0.vector))
             } ?? simd_quatf()
+        }
+        .task {
+            do {
+                try await viewModel.runSolve(cubeVM: cubeVM)
+            } catch {
+                print("ERROR: \(error)")
+            }
         }
         .task {
             do {
@@ -57,22 +47,59 @@ struct CalibrateView: View {
     }
 }
 
-@Observable @MainActor final class CalibrateViewModel {
+@Observable @MainActor final class SolveViewModel {
+    private(set) var steps: SolveTracker? {
+        didSet { updateStep() }
+    }
+
     let centerNode: Entity
-    let cubeNode: Entity
+    let cubeNode: CubeEntity
 
     init() {
         let node = Entity()
 
-        cubeNode = CubeEntity(cubeVM: CubeViewModelManager.shared.current, trackOrientation: false)
+        cubeNode = CubeEntity()
         node.addChild(cubeNode)
-        node.components.set(OpacityComponent(opacity: 0.3))
+        node.components.set(OpacityComponent(opacity: 0.7))
 
         centerNode = node
     }
 
     var leftHand: HandAnchor?
     var rightHand: HandAnchor?
+
+    func runSolve(cubeVM: CubeViewModel) async throws {
+        var state = cubeVM.rsCube
+
+        cubeNode.setCube(state)
+
+        var steps = try await SolveTracker(moves: state.solution().values)
+        self.steps = steps
+
+        print(steps)
+
+        if let nextStep = steps.moves.first {
+            cubeNode.setCube(state.applying([nextStep]), animation: .init(move: nextStep, duration: 0.5))
+        }
+
+        for await move in cubeVM.cube.moves.values where !steps.moves.isEmpty {
+            state.apply(move)
+            cubeNode.setCube(state)
+            steps.apply(move)
+            self.steps = steps
+            if let nextStep = steps.moves.first {
+                cubeNode.setCube(state.applying([nextStep]), animation: .init(move: nextStep, duration: 0.5))
+            }
+            print(steps)
+        }
+
+        print("DONE", steps)
+    }
+
+    private func updateStep() {
+        guard let step = steps?.moves.first else { return }
+        print("STEP: \(step)")
+    }
 
     func runTracking() async throws {
         let session = ARKitSession()
