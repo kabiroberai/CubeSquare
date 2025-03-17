@@ -145,48 +145,62 @@ struct CubeView: View {
 
     var body: some View {
         VStack {
-            Text("Solved: \(cubeVM.rsCube == .solved)")
-
-            if let batteryLevel = cubeVM.batteryLevel {
-                Text("Battery: \(batteryLevel, format: .number.precision(.integerLength(2...2)))%")
-            } else {
-                ProgressView("Loading battery")
+            #if os(visionOS)
+            HStack {
+                ScenePicker()
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.bottom, 32)
             }
+            #else
+            Button("Calibrate") {
+                cubeVM.calibrate()
+            }
+            #endif
 
             if let hardware = cubeVM.hardware {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Hardware name:")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Text(hardware.hardwareName)
-                            .font(.body)
-                            .fontWeight(.medium)
-                    }
-                    HStack {
-                        Text("Software:")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text(hardware.softwareVersion)
-                            .font(.body)
-                            .fontWeight(.medium)
-                    }
-                    HStack {
-                        Text("Hardware version:")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text(hardware.hardwareVersion)
-                            .font(.body)
-                            .fontWeight(.medium)
-                    }
-                    HStack {
-                        Text("Gyroscope:")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text(hardware.supportsGyroscope ? "Supported" : "Not Supported")
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundColor(hardware.supportsGyroscope ? .green : .red)
+                VStack {
+                    Text(hardware.hardwareName)
+                        .font(.title2)
+                        .padding(.bottom, 16)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Battery:")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            if let batteryLevel = cubeVM.batteryLevel {
+                                Text("\(batteryLevel, format: .number.precision(.integerLength(2...2)))%")
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                            } else {
+                                ProgressView("Loading battery")
+                            }
+                        }
+                        HStack {
+                            Text("Software:")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text(hardware.softwareVersion)
+                                .font(.body)
+                                .fontWeight(.medium)
+                        }
+                        HStack {
+                            Text("Hardware:")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text(hardware.hardwareVersion)
+                                .font(.body)
+                                .fontWeight(.medium)
+                        }
+                        HStack {
+                            Text("Gyroscope:")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text(hardware.supportsGyroscope ? "Supported" : "Not Supported")
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(hardware.supportsGyroscope ? .green : .red)
+                        }
                     }
                 }
                 .padding()
@@ -198,31 +212,6 @@ struct CubeView: View {
 
             if cubeVM.hasOrientation {
                 CubeRealityView(cubeVM: cubeVM)
-
-                #if os(visionOS)
-                Button("Calibrate") {
-                    Task {
-                        await dismissImmersiveSpace()
-                        await openImmersiveSpace(id: CalibrateView.spaceID)
-                    }
-                }
-
-                Toggle("Solve Mode", isOn: $isSolving)
-                    .onChange(of: isSolving) { _, isSolving in
-                        Task {
-                            if isSolving {
-                                await openImmersiveSpace(id: TimerView.spaceID)
-                            } else {
-                                await dismissImmersiveSpace()
-                            }
-                        }
-                    }
-                    .fixedSize(horizontal: true, vertical: false)
-                #else
-                Button("Calibrate") {
-                    cubeVM.calibrate()
-                }
-                #endif
             } else {
                 ProgressView("Loading gyro")
             }
@@ -232,6 +221,44 @@ struct CubeView: View {
         }
         .onAppear {
             cubeVM.makeCurrent()
+        }
+    }
+}
+
+struct ScenePicker: View {
+    @State private var selectedScene: String?
+    @Environment(\.openImmersiveSpace) private var open
+    @Environment(\.dismissImmersiveSpace) private var dismiss
+
+    private var actuallyVisible: String? {
+        ImmersiveSpaceManager.shared.visible
+    }
+
+    var body: some View {
+        Picker(selection: $selectedScene) {
+            Text("Home")
+                .tag(String?.none)
+
+            Label("Calibrate", systemImage: "dot.scope")
+                .tag(CalibrateView.spaceID)
+
+            Label("Timer", systemImage: "timer")
+                .tag(TimerView.spaceID)
+        } label: {
+            Text("Home")
+        }
+        .pickerStyle(.segmented)
+        .onChange(of: selectedScene) { _, new in
+            Task {
+                if let new {
+                    await open(id: new)
+                } else if actuallyVisible != nil {
+                    await dismiss()
+                }
+            }
+        }
+        .onChange(of: actuallyVisible) { _, new in
+            selectedScene = new
         }
     }
 }
