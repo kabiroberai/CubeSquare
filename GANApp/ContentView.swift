@@ -226,6 +226,7 @@ struct CubeView: View {
 }
 
 struct ScenePicker: View {
+    @State private var isChanging = false
     @State private var selectedScene: String?
     @Environment(\.openImmersiveSpace) private var open
     @Environment(\.dismissImmersiveSpace) private var dismiss
@@ -253,14 +254,18 @@ struct ScenePicker: View {
         .pickerStyle(.segmented)
         .onChange(of: selectedScene) { _, new in
             Task {
-                if let new {
-                    await open(id: new)
-                } else if actuallyVisible != nil {
+                isChanging = true
+                if actuallyVisible != nil {
                     await dismiss()
                 }
+                if let new {
+                    await open(id: new)
+                }
+                isChanging = false
             }
         }
         .onChange(of: actuallyVisible) { _, new in
+            guard !isChanging else { return }
             selectedScene = new
         }
     }
