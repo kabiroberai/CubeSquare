@@ -53,28 +53,51 @@ struct SolveView: View {
     }
 
     let centerNode: Entity
-    let face: ModelEntity
+    let indicator: Entity
 
     init() {
         let node = Entity()
+
+        indicator = Entity()
+        node.addChild(indicator)
 
         let turnPath = Path {
             $0.addArc(
                 center: .zero,
                 radius: 0.0575 * 1.1,
                 startAngle: .degrees(0),
-                endAngle: .degrees(90),
+                endAngle: .degrees(105),
                 clockwise: true
             )
-        }.strokedPath(.init(lineWidth: 0.0575 / 4, dash: [0.0575 / 8, 0.0575 / 8]))
+        }
+        .strokedPath(.init(
+            lineWidth: 0.0575 / 4,
+            dash: [0.0575 / 8, 0.0575 / 8]
+        ))
         var options = MeshResource.ShapeExtrusionOptions()
-        options.extrusionMethod = .linear(depth: 0.0575 / 8)
-        let faceMesh = try! MeshResource(extruding: turnPath, extrusionOptions: options)
-        face = ModelEntity(mesh: faceMesh, materials: [
+        options.extrusionMethod = .linear(depth: 0.0575 / 4)
+        let turnMesh = try! MeshResource(extruding: turnPath, extrusionOptions: options)
+        let turn = ModelEntity(mesh: turnMesh, materials: [
             SimpleMaterial(color: .white, isMetallic: false)
         ])
-        node.addChild(face)
-        node.components.set(OpacityComponent(opacity: 0.3))
+        turn.components.set(OpacityComponent(opacity: 0.3))
+        indicator.addChild(turn)
+
+        let coneMesh = MeshResource.generateCone(height: 0.0575 / 2, radius: 0.0575 / 4)
+        let cone = ModelEntity(mesh: coneMesh, materials: [
+            SimpleMaterial(color: .white, isMetallic: false)
+        ])
+        cone.transform.rotation = .init(Rotation3D(angle: .degrees(-90), axis: .z))
+        cone.transform.translation = [0, Float(0.0575 * 1.1), 0]
+        turn.addChild(cone)
+
+        let animation = OrbitAnimation(
+            duration: 4,
+            axis: [0, 0, 1],
+            orientToPath: true,
+            bindTarget: .transform
+        )
+        turn.playAnimation(try! .generate(with: animation).repeat())
 
         let cubeMesh = MeshResource.generateBox(size: 0.0575)
         let cube = ModelEntity(mesh: cubeMesh, materials: [
@@ -89,39 +112,30 @@ struct SolveView: View {
     var rightHand: HandAnchor?
 
     func playMove(_ move: Move?) {
-        face.stopAllAnimations()
         guard let move else {
-            face.transform = .identity
-            face.components.set(OpacityComponent(opacity: 0))
+            indicator.isEnabled = false
             return
         }
 
-        face.components.set(OpacityComponent(opacity: 1))
+        indicator.isEnabled = true
 
         let forwardFace: Face = switch move.face {
         case .top: .front
-        case .right: .bottom
-        case .front: .bottom
         case .bottom: .back
-        case .left: .bottom
-        case .back: .bottom
+        case .right, .front, .left, .back: .bottom
         }
+        let isCCW = move.magnitude == .counterClockwiseQuarterTurn
 
-        let transform = Transform(
-            rotation: .init(Rotation3D(forward: Vector3D(forwardFace.offset), up: Vector3D(move.face.offset)) * Rotation3D(angle: .degrees(90), axis: .x)),
+        indicator.transform = Transform(
+            rotation: .init(Rotation3D(
+                forward: Vector3D(forwardFace.offset),
+                up: Vector3D(move.face.offset)
+            ) * Rotation3D(
+                angle: .degrees(isCCW ? 90 : -90),
+                axis: .x
+            )),
             translation: move.face.offset * 0.0575 / 3
         )
-        let animation = OrbitAnimation(
-            duration: 4,
-            axis: move.face.offset,
-            startTransform: transform,
-            spinClockwise: move.magnitude != .counterClockwiseQuarterTurn,
-            orientToPath: true,
-            rotationCount: 1,
-            bindTarget: .transform
-        )
-        face.transform = transform
-        face.playAnimation(try! AnimationResource.generate(with: animation).repeat())
     }
 
     func runSolve(cubeVM: CubeViewModel) async throws {
