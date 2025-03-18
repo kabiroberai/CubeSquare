@@ -57,25 +57,27 @@ struct SolveView: View {
 
     init() {
         let node = Entity()
+        node.transform.scale = SIMD3(repeating: 0.0575)
 
         indicator = Entity()
         node.addChild(indicator)
 
+        let turnRadius = 1.1
         let turnPath = Path {
             $0.addArc(
                 center: .zero,
-                radius: 0.0575 * 1.1,
+                radius: turnRadius,
                 startAngle: .degrees(0),
                 endAngle: .degrees(105),
                 clockwise: true
             )
         }
         .strokedPath(.init(
-            lineWidth: 0.0575 / 4,
-            dash: [0.0575 / 8, 0.0575 / 8]
+            lineWidth: 0.25,
+            dash: [0.25, 0.25]
         ))
         var options = MeshResource.ShapeExtrusionOptions()
-        options.extrusionMethod = .linear(depth: 0.0575 / 4)
+        options.extrusionMethod = .linear(depth: 0.25)
         let turnMesh = try! MeshResource(extruding: turnPath, extrusionOptions: options)
         let turn = ModelEntity(mesh: turnMesh, materials: [
             SimpleMaterial(color: .white, isMetallic: false)
@@ -83,12 +85,12 @@ struct SolveView: View {
         turn.components.set(OpacityComponent(opacity: 0.3))
         indicator.addChild(turn)
 
-        let coneMesh = MeshResource.generateCone(height: 0.0575 / 2, radius: 0.0575 / 4)
+        let coneMesh = MeshResource.generateCone(height: 0.5, radius: 0.25)
         let cone = ModelEntity(mesh: coneMesh, materials: [
             SimpleMaterial(color: .white, isMetallic: false)
         ])
         cone.transform.rotation = .init(Rotation3D(angle: .degrees(-90), axis: .z))
-        cone.transform.translation = [0, Float(0.0575 * 1.1), 0]
+        cone.transform.translation = [0, Float(turnRadius), 0]
         turn.addChild(cone)
 
         let animation = OrbitAnimation(
@@ -99,7 +101,7 @@ struct SolveView: View {
         )
         turn.playAnimation(try! .generate(with: animation).repeat())
 
-        let cubeMesh = MeshResource.generateBox(size: 0.0575)
+        let cubeMesh = MeshResource.generateBox(size: 1.0)
         let cube = ModelEntity(mesh: cubeMesh, materials: [
             OcclusionMaterial()
         ])
@@ -134,7 +136,7 @@ struct SolveView: View {
                 angle: .degrees(isCCW ? 90 : -90),
                 axis: .x
             )),
-            translation: move.face.offset * 0.0575 / 3
+            translation: move.face.offset / 3
         )
     }
 
