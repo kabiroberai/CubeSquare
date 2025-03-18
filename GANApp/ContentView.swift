@@ -148,7 +148,7 @@ struct CubeView: View {
             #if os(visionOS)
             HStack {
                 ScenePicker()
-                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(width: 400)
                     .padding(.bottom, 32)
             }
             #else
@@ -240,7 +240,7 @@ struct ScenePicker: View {
             Text("Home")
                 .tag(String?.none)
 
-            Label("Calibrate", systemImage: "dot.scope")
+            Label("Sync", systemImage: "dot.scope")
                 .tag(CalibrateView.spaceID)
 
             Label("Timer", systemImage: "timer")
