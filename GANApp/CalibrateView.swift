@@ -21,7 +21,7 @@ struct CalibrateView: View {
 
     var body: some View {
         RealityView { content in
-            viewModel.centerNode.transform.translation = [0, 0.7, -0.35]
+            viewModel.centerNode.transform.translation = [0, 1.0, -0.4]
             content.add(viewModel.centerNode)
 
             Task {
