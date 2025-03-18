@@ -238,7 +238,7 @@ extension Face {
 
     // these colors are aligned with the GAN face definitions.
     // eg, when GAN sends us a 'U' it means the white face.
-    fileprivate var color: SimpleMaterial.Color {
+    var color: SimpleMaterial.Color {
         switch self {
         case .top: .white
         case .bottom: .yellow

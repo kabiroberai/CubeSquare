@@ -54,6 +54,7 @@ struct SolveView: View {
 
     let centerNode: Entity
     let indicator: Entity
+    let setColor: (SimpleMaterial.Color) -> Void
 
     init() {
         let node = Entity()
@@ -73,16 +74,16 @@ struct SolveView: View {
             )
         }
         .strokedPath(.init(
-            lineWidth: 0.25,
-            dash: [0.25, 0.25]
+            lineWidth: 0.125,
+            dash: [0.125, 0.125]
         ))
         var options = MeshResource.ShapeExtrusionOptions()
-        options.extrusionMethod = .linear(depth: 0.25)
+        options.extrusionMethod = .linear(depth: 0.125)
         let turnMesh = try! MeshResource(extruding: turnPath, extrusionOptions: options)
         let turn = ModelEntity(mesh: turnMesh, materials: [
             SimpleMaterial(color: .white, isMetallic: false)
         ])
-        turn.components.set(OpacityComponent(opacity: 0.3))
+        turn.components.set(OpacityComponent(opacity: 1.0))
         indicator.addChild(turn)
 
         let coneMesh = MeshResource.generateCone(height: 0.5, radius: 0.25)
@@ -108,6 +109,11 @@ struct SolveView: View {
         node.addChild(cube)
 
         centerNode = node
+
+        setColor = {
+            turn.model!.materials[0] = SimpleMaterial(color: $0, isMetallic: false)
+            cone.model!.materials[0] = SimpleMaterial(color: $0, isMetallic: false)
+        }
     }
 
     var leftHand: HandAnchor?
@@ -127,6 +133,8 @@ struct SolveView: View {
         case .right, .front, .left, .back: .bottom
         }
         let isCCW = move.magnitude == .counterClockwiseQuarterTurn
+
+        setColor(move.face.color)
 
         indicator.transform = Transform(
             rotation: .init(Rotation3D(
