@@ -26,7 +26,7 @@ struct SolveView: View {
             let translation = allJoints.map(\.translation).reduce(.zero, +) / Float(allJoints.count)
 
             viewModel.centerNode.transform.translation = translation
-            viewModel.cubeNode.transform.rotation = cubeVM.orientation.map {
+            viewModel.centerNode.transform.rotation = cubeVM.orientation.map {
                 simd_quatf(vector: simd_float4($0.vector))
             } ?? simd_quatf()
         }
@@ -53,14 +53,34 @@ struct SolveView: View {
     }
 
     let centerNode: Entity
-    let cubeNode: CubeEntity
+    let face: ModelEntity
 
     init() {
         let node = Entity()
 
-        cubeNode = CubeEntity()
-        node.addChild(cubeNode)
-        node.components.set(OpacityComponent(opacity: 0.7))
+        let turnPath = Path {
+            $0.addArc(
+                center: .zero,
+                radius: 0.0575 * 1.1,
+                startAngle: .degrees(0),
+                endAngle: .degrees(90),
+                clockwise: true
+            )
+        }.strokedPath(.init(lineWidth: 0.0575 / 4, dash: [0.0575 / 8, 0.0575 / 8]))
+        var options = MeshResource.ShapeExtrusionOptions()
+        options.extrusionMethod = .linear(depth: 0.0575 / 8)
+        let faceMesh = try! MeshResource(extruding: turnPath, extrusionOptions: options)
+        face = ModelEntity(mesh: faceMesh, materials: [
+            SimpleMaterial(color: .white, isMetallic: false)
+        ])
+        node.addChild(face)
+        node.components.set(OpacityComponent(opacity: 0.3))
+
+        let cubeMesh = MeshResource.generateBox(size: 0.0575)
+        let cube = ModelEntity(mesh: cubeMesh, materials: [
+            OcclusionMaterial()
+        ])
+        node.addChild(cube)
 
         centerNode = node
     }
@@ -68,28 +88,52 @@ struct SolveView: View {
     var leftHand: HandAnchor?
     var rightHand: HandAnchor?
 
+    func playMove(_ move: Move?) {
+        face.stopAllAnimations()
+        guard let move else {
+            face.transform = .identity
+            face.components.set(OpacityComponent(opacity: 0))
+            return
+        }
+
+        face.components.set(OpacityComponent(opacity: 1))
+
+        let forwardFace: Face = switch move.face {
+        case .top: .front
+        case .right: .bottom
+        case .front: .bottom
+        case .bottom: .back
+        case .left: .bottom
+        case .back: .bottom
+        }
+
+        let transform = Transform(
+            rotation: .init(Rotation3D(forward: Vector3D(forwardFace.offset), up: Vector3D(move.face.offset)) * Rotation3D(angle: .degrees(90), axis: .x)),
+            translation: move.face.offset * 0.0575 / 3
+        )
+        let animation = OrbitAnimation(
+            duration: 4,
+            axis: move.face.offset,
+            startTransform: transform,
+            spinClockwise: move.magnitude != .counterClockwiseQuarterTurn,
+            orientToPath: true,
+            rotationCount: 1,
+            bindTarget: .transform
+        )
+        face.transform = transform
+        face.playAnimation(try! AnimationResource.generate(with: animation).repeat())
+    }
+
     func runSolve(cubeVM: CubeViewModel) async throws {
         var state = cubeVM.rsCube
-
-        cubeNode.setCube(state)
 
         var steps = try await SolveTracker(moves: state.solution().values)
         self.steps = steps
 
-        print(steps)
-
-        if let nextStep = steps.moves.first {
-            cubeNode.setCube(state.applying([nextStep]), animation: .init(move: nextStep, duration: 0.5))
-        }
-
         for await move in cubeVM.cube.moves.values where !steps.moves.isEmpty {
             state.apply(move)
-            cubeNode.setCube(state)
             steps.apply(move)
             self.steps = steps
-            if let nextStep = steps.moves.first {
-                cubeNode.setCube(state.applying([nextStep]), animation: .init(move: nextStep, duration: 0.5))
-            }
             print(steps)
         }
 
@@ -97,8 +141,7 @@ struct SolveView: View {
     }
 
     private func updateStep() {
-        guard let step = steps?.moves.first else { return }
-        print("STEP: \(step)")
+        playMove(steps?.moves.first)
     }
 
     func runTracking() async throws {

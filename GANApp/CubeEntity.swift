@@ -225,7 +225,7 @@ extension EdgeLocation {
 }
 
 extension Face {
-    fileprivate var offset: SIMD3<Float> {
+    var offset: SIMD3<Float> {
         switch self {
         case .top: [0, 1, 0]
         case .bottom: [0, -1, 0]
