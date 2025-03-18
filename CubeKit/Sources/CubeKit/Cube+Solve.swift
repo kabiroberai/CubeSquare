@@ -32,6 +32,8 @@ extension Cube {
     )
 
     public func solution(maxDepth: Int = 24, timeout: TimeInterval = 1000) async throws -> MoveSeries {
+        guard self != .solved else { return MoveSeries(values: []) }
+
         let cache = await CubeSolverCache.shared.cache()
 
         guard let rawMoves = await withCheckedContinuation({ continuation in

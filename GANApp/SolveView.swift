@@ -125,19 +125,12 @@ struct SolveView: View {
     }
 
     func runSolve(cubeVM: CubeViewModel) async throws {
-        var state = cubeVM.rsCube
-
-        var steps = try await SolveTracker(moves: state.solution().values)
+        var steps = try await SolveTracker(moves: cubeVM.rsCube.solution().values)
         self.steps = steps
-
-        for await move in cubeVM.cube.moves.values where !steps.moves.isEmpty {
-            state.apply(move)
+        for await move in cubeVM.cube.moves.values {
             steps.apply(move)
             self.steps = steps
-            print(steps)
         }
-
-        print("DONE", steps)
     }
 
     private func updateStep() {
