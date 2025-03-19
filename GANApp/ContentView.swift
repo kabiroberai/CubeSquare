@@ -225,6 +225,7 @@ struct CubeView: View {
     }
 }
 
+#if os(visionOS)
 struct ScenePicker: View {
     @State private var isChanging = false
     @State private var selectedScene: String?
@@ -270,6 +271,7 @@ struct ScenePicker: View {
         }
     }
 }
+#endif
 
 struct CubeRealityView: View {
     let cubeVM: CubeViewModel
