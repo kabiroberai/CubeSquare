@@ -224,6 +224,37 @@ extension EdgeLocation {
     }
 }
 
+/*
+ // /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/Spatial/SPPose3D.h
+ // /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/lib/swift/Spatial.swiftmodule/arm64-apple-ios.swiftinterface
+ SPRotation3D SPRotation3DMakeLookAt(SPPoint3D position, SPPoint3D target, SPVector3D up) {
+     simd_double3 axisZ = simd_normalize(target.vector - position.vector);
+     simd_double3 axisX = simd_normalize(simd_cross(axisZ, simd_normalize(up.vector)));
+     simd_double3 axisY = simd_normalize(simd_cross(axisX, axisZ));
+
+     simd_double3x3 m = simd_matrix(-axisX, axisY, axisZ);
+     simd_quatd q = simd_normalize(simd_quaternion(m));
+
+     return SPRotation3DMakeWithQuaternion(q);
+ }
+
+ SPRotation3D SPRotation3DMakeLookAt(SPVector3D forward, SPVector3D up) {
+     SPPoint3D position = SPPoint3DZero;
+     SPPoint3D target = SPPoint3DMakeWithVector(forward.vector);
+     return SPRotation3DMakeLookAt(position, target, up);
+ }
+ */
+
+extension simd_quatd {
+    init(forward: SIMD3<Double>, up: SIMD3<Double>) {
+        let axisZ = forward
+        let axisX = cross(axisZ, normalize(up))
+        let axisY = cross(axisX, axisZ)
+        let rotation = simd_matrix(-axisX, axisY, axisZ)
+        self = simd_quatd(rotation).normalized
+    }
+}
+
 extension Face {
     var offset: SIMD3<Float> {
         switch self {
