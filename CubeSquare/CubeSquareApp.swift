@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct GANAppApp: App {
+struct CubeSquareApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -4,6 +4,8 @@
 <dict>
 	<key>NSHandsTrackingUsageDescription</key>
 	<string>Please</string>
+	<key>NSWorldSensingUsageDescription</key>
+	<string>Please</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationPreferredDefaultSceneSessionRole</key>
@@ -21,7 +23,5 @@
 			</array>
 		</dict>
 	</dict>
-	<key>NSWorldSensingUsageDescription</key>
-	<string>Please</string>
 </dict>
 </plist>
