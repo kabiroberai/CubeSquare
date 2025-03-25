@@ -1,3 +1,4 @@
 CODE_SIGN_ENTITLEMENTS = CubeSquare/CubeSquare.entitlements
 GENERATE_INFOPLIST_FILE = YES
-DEVELOPMENT_TEAM = 25MTNC334J
+
+#include? "Private.xcconfig"
