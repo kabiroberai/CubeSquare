@@ -98,11 +98,6 @@ extern signed char Slice_Twist_Prun[N_SLICE1 * N_TWIST / 2 + 1];
 // The pruning table entries give a lower estimation for the number of moves to reach the H-subgroup.
 extern signed char Slice_Flip_Prun[N_SLICE1 * N_FLIP / 2];
 
-void initPruning(const char *cache_dir);
-
-// Set pruning value in table. Two values are stored in one char.
-void setPruning(signed char *table, int index, signed char value);
-
 // Extract pruning value
 signed char getPruning(signed char *table, int index);
 

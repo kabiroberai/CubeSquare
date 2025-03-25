@@ -1,9 +1,6 @@
 #ifndef CUBIECUBE_H
 #define CUBIECUBE_H
 
-#include <string.h>
-#include <stdlib.h>
-
 // The names of the corner positions of the cube. Corner URF e.g., has an U(p), a R(ight) and a F(ront) facelet
 typedef enum {
     URF, UFL, ULB, UBR, DFR, DLF, DBL, DRB
@@ -36,15 +33,8 @@ typedef struct cubiecube cubiecube_t;
 cubiecube_t* get_moveCube(void);
 cubiecube_t* get_cubiecube(void);
 
-// n choose k
-int Cnk(int n, int k);
-void rotateLeft_corner(corner_t* arr, int l, int r);
-void rotateRight_corner(corner_t* arr, int l, int r);
-void rotateLeft_edge(edge_t* arr, int l, int r);
-void rotateRight_edge(edge_t* arr, int l, int r);
 void cornerMultiply(cubiecube_t* cubiecube, cubiecube_t* b);
 void edgeMultiply(cubiecube_t* cubiecube, cubiecube_t* b);
-void multiply(cubiecube_t* cubiecube, cubiecube_t* b);
 void invCubieCube(cubiecube_t* cubiecube, cubiecube_t* c);
 short getTwist(cubiecube_t* cubiecube);
 void setTwist(cubiecube_t* cubiecube, short twist);

@@ -1,4 +1,5 @@
-#include <sys/types.h>
+#include <stdlib.h>
+
 #include "coordcube.h"
 #include "cubiecube.h"
 
@@ -33,6 +34,25 @@ coordcube_t* get_coordcube(cubiecube_t* cubiecube)
     result->URtoDF      = getURtoDF(cubiecube);// only needed in phase2
 
     return result;
+}
+
+static void setPruning(signed char *table, int index, signed char value) {
+    if ((index & 1) == 0)
+        table[index / 2] &= 0xf0 | value;
+    else
+        table[index / 2] &= 0x0f | (value << 4);
+}
+
+// Extract pruning value
+signed char getPruning(signed char *table, int index) {
+    signed char res;
+
+    if ((index & 1) == 0)
+        res = (table[index / 2] & 0x0f);
+    else
+        res = ((table[index / 2] >> 4) & 0x0f);
+
+    return res;
 }
 
 void cube_setup() {
@@ -306,23 +326,4 @@ void cube_setup() {
             depth++;
         }
     }
-}
-
-void setPruning(signed char *table, int index, signed char value) {
-    if ((index & 1) == 0)
-        table[index / 2] &= 0xf0 | value;
-    else
-        table[index / 2] &= 0x0f | (value << 4);
-}
-
-// Extract pruning value
-signed char getPruning(signed char *table, int index) {
-    signed char res;
-
-    if ((index & 1) == 0)
-        res = (table[index / 2] & 0x0f);
-    else
-        res = ((table[index / 2] >> 4) & 0x0f);
-
-    return res;
 }

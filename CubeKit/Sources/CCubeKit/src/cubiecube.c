@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <string.h>
+
 #include "cube.h"
 #include "cubiecube.h"
 
@@ -95,7 +98,8 @@ void cube_free(cube_t cube) {
     free(cube);
 }
 
-int Cnk(int n, int k) {
+// n choose k
+static int Cnk(int n, int k) {
     int i, j, s;
     if (n < k)
         return 0;
@@ -108,7 +112,7 @@ int Cnk(int n, int k) {
     return s;
 }
 
-void rotateLeft_corner(corner_t* arr, int l, int r)
+static void rotateLeft_corner(corner_t* arr, int l, int r)
 // Left rotation of all array elements between l and r
 {
     int i;
@@ -118,7 +122,7 @@ void rotateLeft_corner(corner_t* arr, int l, int r)
     arr[r] = temp;
 }
 
-void rotateRight_corner(corner_t* arr, int l, int r)
+static void rotateRight_corner(corner_t* arr, int l, int r)
 // Right rotation of all array elements between l and r
 {
     int i;
@@ -129,7 +133,7 @@ void rotateRight_corner(corner_t* arr, int l, int r)
 }
 
 
-void rotateLeft_edge(edge_t* arr, int l, int r)
+static void rotateLeft_edge(edge_t* arr, int l, int r)
 // Left rotation of all array elements between l and r
 {
     int i;
@@ -139,7 +143,7 @@ void rotateLeft_edge(edge_t* arr, int l, int r)
     arr[r] = temp;
 }
 
-void rotateRight_edge(edge_t* arr, int l, int r)
+static void rotateRight_edge(edge_t* arr, int l, int r)
 // Right rotation of all array elements between l and r
 {
     int i;
@@ -211,12 +215,6 @@ void edgeMultiply(cubiecube_t* cubiecube, cubiecube_t* b)
         cubiecube->ep[edge] = ePerm[edge];
         cubiecube->eo[edge] = eOri[edge];
     }
-}
-
-void multiply(cubiecube_t* cubiecube, cubiecube_t* b)
-{
-    cornerMultiply(cubiecube, b);
-    edgeMultiply(cubiecube, b);
 }
 
 void invCubieCube(cubiecube_t* cubiecube, cubiecube_t* c)
