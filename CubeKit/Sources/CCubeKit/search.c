@@ -71,10 +71,6 @@ char* solution(char* facelets, int maxDepth, long timeOut, int useSeparator, con
     // +++++++++++++++++++++check for wrong input +++++++++++++++++++++++++++++
     int count[6] = {0};
 
-    if (PRUNING_INITED == 0) {
-        initPruning(cache_dir);
-    }
-
     for (i = 0; i < 54; i++)
         switch(facelets[i]) {
             case 'U':

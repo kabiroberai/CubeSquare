@@ -1,6 +1,5 @@
 #include <sys/types.h>
 #include <stdio.h>
-#include "prunetable_helpers.h"
 #include "coordcube.h"
 #include "cubiecube.h"
 
@@ -21,25 +20,6 @@ signed char Slice_URtoDF_Parity_Prun[N_SLICE2 * N_URtoDF * N_PARITY / 2] = {0};
 signed char Slice_Twist_Prun[N_SLICE1 * N_TWIST / 2 + 1] = {0};
 signed char Slice_Flip_Prun[N_SLICE1 * N_FLIP / 2] = {0};
 
-int PRUNING_INITED = 0;
-
-void move(coordcube_t* coordcube, int m, const char *cache_dir)
-{
-    if (PRUNING_INITED == 0) {
-        initPruning(cache_dir);
-    }
-    coordcube->twist = twistMove[coordcube->twist][m];
-    coordcube->flip = flipMove[coordcube->flip][m];
-    coordcube->parity = parityMove[coordcube->parity][m];
-    coordcube->FRtoBR = FRtoBR_Move[coordcube->FRtoBR][m];
-    coordcube->URFtoDLF = URFtoDLF_Move[coordcube->URFtoDLF][m];
-    coordcube->URtoUL = URtoUL_Move[coordcube->URtoUL][m];
-    coordcube->UBtoDF = UBtoDF_Move[coordcube->UBtoDF][m];
-    if (coordcube->URtoUL < 336 && coordcube->UBtoDF < 336)// updated only if UR,UF,UL,UB,DR,DF
-        // are not in UD-slice
-        coordcube->URtoDF = MergeURtoULandUBtoDF[coordcube->URtoUL][coordcube->UBtoDF];
-}
-
 coordcube_t* get_coordcube(cubiecube_t* cubiecube)
 {
     coordcube_t* result = (coordcube_t *) calloc(1, sizeof(coordcube_t));
@@ -55,6 +35,10 @@ coordcube_t* get_coordcube(cubiecube_t* cubiecube)
 
     return result;
 }
+
+// disable caching
+#define check_cached_table(...) 1
+#define dump_to_file(...)
 
 void initPruning(const char *cache_dir)
 {
@@ -207,7 +191,7 @@ void initPruning(const char *cache_dir)
         for (i = 0; i < N_SLICE2 * N_URFtoDLF * N_PARITY / 2; i++)
             Slice_URFtoDLF_Parity_Prun[i] = -1;
         setPruning(Slice_URFtoDLF_Parity_Prun, 0, 0);
-        printf("1\n");
+        // printf("1\n");
         while (done != N_SLICE2 * N_URFtoDLF * N_PARITY) {
             // printf("%d %d %d\n", done, N_SLICE2 * N_URFtoDLF * N_PARITY, depth);
             for (i = 0; i < N_SLICE2 * N_URFtoDLF * N_PARITY; i++) {
@@ -244,9 +228,9 @@ void initPruning(const char *cache_dir)
             }
             depth++;
         }
-        printf("2\n");
+        // printf("2\n");
         dump_to_file((void*) Slice_URFtoDLF_Parity_Prun, sizeof(Slice_URFtoDLF_Parity_Prun), "Slice_URFtoDLF_Parity_Prun", cache_dir);
-        printf("3\n");
+        // printf("3\n");
     }
 
     if(check_cached_table("Slice_URtoDF_Parity_Prun", (void*) Slice_URtoDF_Parity_Prun, sizeof(Slice_URtoDF_Parity_Prun), cache_dir) != 0) {
@@ -342,8 +326,6 @@ void initPruning(const char *cache_dir)
         }
         dump_to_file((void*) Slice_Flip_Prun, sizeof(Slice_Flip_Prun), "Slice_Flip_Prun", cache_dir);
     }
-
-    PRUNING_INITED = 1;
 }
 
 void setPruning(signed char *table, int index, signed char value) {
