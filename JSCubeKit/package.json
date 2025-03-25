@@ -1,0 +1,17 @@
+{
+  "name": "jscubekit",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "bun build . --outfile=../CubeKit/Sources/CubeKit/cube.js --minify --target=browser"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "cubejs": "^1.3.2"
+  }
+}

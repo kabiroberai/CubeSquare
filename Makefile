@@ -7,3 +7,7 @@ reload:
 .PHONY: generate
 generate:
 	xcodegen generate
+
+.PHONY: js
+js:
+	bun --cwd=JSCubeKit run build

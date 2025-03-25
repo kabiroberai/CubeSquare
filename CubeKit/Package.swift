@@ -29,6 +29,9 @@ let package = Package(
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "_CryptoExtras", package: "swift-crypto"),
             ],
+            resources: [
+                .copy("cube.js"),
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v5),
             ]
