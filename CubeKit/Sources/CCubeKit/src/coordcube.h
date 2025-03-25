@@ -107,6 +107,5 @@ void setPruning(signed char *table, int index, signed char value);
 signed char getPruning(signed char *table, int index);
 
 coordcube_t* get_coordcube(cubiecube_t* cubiecube);
-void move(coordcube_t* coordcube, int m, const char *cache_dir);
 
 #endif

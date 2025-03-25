@@ -1,5 +1,5 @@
+#include "cube.h"
 #include "cubiecube.h"
-#include "facecube.h"
 
 cubiecube_t * get_moveCube()
 {
@@ -77,6 +77,24 @@ cubiecube_t* get_cubiecube()
     return result;
 }
 
+cube_t cube_new(uint8_t *cp, uint8_t *co, uint8_t *ep, uint8_t *eo)
+{
+    cubiecube_t* result = (cubiecube_t *) calloc(1, sizeof(cubiecube_t));
+    for (int i = 0; i < 8; ++i) {
+        result->cp[i] = cp[i];
+        result->co[i] = co[i];
+    }
+    for (int i = 0; i < 12; ++i) {
+        result->ep[i] = ep[i];
+        result->eo[i] = eo[i];
+    }
+    return result;
+}
+
+void cube_free(cube_t cube) {
+    free(cube);
+}
+
 int Cnk(int n, int k) {
     int i, j, s;
     if (n < k)
@@ -129,29 +147,6 @@ void rotateRight_edge(edge_t* arr, int l, int r)
     for (i = r; i > l; i--)
         arr[i] = arr[i - 1];
     arr[l] = temp;
-}
-
-facecube_t* toFaceCube(cubiecube_t* cubiecube)
-{
-    int i, j, n;
-    signed char ori;
-    facecube_t* fcRet = get_facecube();
-    for(i = 0; i < CORNER_COUNT; i++) {
-        j = cubiecube->cp[i];// cornercubie with index j is at
-        // cornerposition with index i
-        ori = cubiecube->co[i];// Orientation of this cubie
-        for (n = 0; n < 3; n++)
-            fcRet->f[cornerFacelet[i][(n + ori) % 3]] = cornerColor[j][n];
-    }
-    for(i = 0; i < EDGE_COUNT; i++)
-    {
-        j = cubiecube->ep[i];// edgecubie with index j is at edgeposition
-        // with index i
-        ori = cubiecube->eo[i];// Orientation of this cubie
-        for (n = 0; n < 2; n++)
-            fcRet->f[edgeFacelet[i][(n + ori) % 2]] = edgeColor[j][n];
-    }
-    return fcRet;
 }
 
 void cornerMultiply(cubiecube_t* cubiecube, cubiecube_t* b)

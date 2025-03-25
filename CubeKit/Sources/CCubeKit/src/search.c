@@ -1,10 +1,9 @@
 #include <time.h>
 #include <stdlib.h>
-#include <stdio.h>
+
 #include "search.h"
-#include "color.h"
-#include "facecube.h"
 #include "coordcube.h"
+#include "cube.h"
 
 #define MIN(a, b) (((a)<(b))?(a):(b))
 #define MAX(a, b) (((a)>(b))?(a):(b))
@@ -56,11 +55,9 @@ char* solutionToString(search_t* search, int length, int depthPhase1)
 }
 
 
-char* solution(char* facelets, int maxDepth, long timeOut, int useSeparator, const char* cache_dir)
+char* cube_solve(cube_t cc, int maxDepth, long timeOut, int useSeparator)
 {
     search_t* search = (search_t*) calloc(1, sizeof(search_t));
-    facecube_t* fc;
-    cubiecube_t* cc;
     coordcube_t* c;
 
     int s, i;
@@ -69,38 +66,6 @@ char* solution(char* facelets, int maxDepth, long timeOut, int useSeparator, con
     int depthPhase1;
     time_t tStart;
     // +++++++++++++++++++++check for wrong input +++++++++++++++++++++++++++++
-    int count[6] = {0};
-
-    for (i = 0; i < 54; i++)
-        switch(facelets[i]) {
-            case 'U':
-                count[U]++;
-                break;
-            case 'R':
-                count[R]++;
-                break;
-            case 'F':
-                count[F]++;
-                break;
-            case 'D':
-                count[D]++;
-                break;
-            case 'L':
-                count[L]++;
-                break;
-            case 'B':
-                count[B]++;
-                break;
-        }
-
-    for (i = 0; i < 6; i++)
-        if (count[i] != 9) {
-            free(search);
-            return NULL;
-        }
-
-    fc = get_facecube_fromstring(facelets);
-    cc = toCubieCube(fc);
     if ((s = verify(cc)) != 0) {
         free(search);
         return NULL;
@@ -188,8 +153,6 @@ char* solution(char* facelets, int maxDepth, long timeOut, int useSeparator, con
                 if (s == depthPhase1
                         || (search->ax[depthPhase1 - 1] != search->ax[depthPhase1] && search->ax[depthPhase1 - 1] != search->ax[depthPhase1] + 3)) {
                     char* res;
-                    free((void*) fc);
-                    free((void*) cc);
                     free((void*) c);
                     if (useSeparator) {
                         res = solutionToString(search, s, depthPhase1);
@@ -306,24 +269,4 @@ int totalDepth(search_t* search, int depthPhase1, int maxDepth)
 
     } while (search->minDistPhase2[n + 1] != 0);
     return depthPhase1 + depthPhase2;
-}
-
-void patternize(char* facelets, char* pattern, char* patternized)
-{
-    facecube_t* fc;
-    facecube_t* start_fc = get_facecube_fromstring(facelets);
-    facecube_t* pattern_fc = get_facecube_fromstring(pattern);
-    cubiecube_t* start_cc = toCubieCube(start_fc);
-    cubiecube_t* pattern_cc = toCubieCube(pattern_fc);
-    cubiecube_t* inv_pattern_cc = get_cubiecube();
-    invCubieCube(pattern_cc, inv_pattern_cc);
-    multiply(inv_pattern_cc, start_cc);
-    fc = toFaceCube(inv_pattern_cc);
-    to_String(fc, patternized);
-    free(start_fc);
-    free(pattern_fc);
-    free(start_cc);
-    free(pattern_cc);
-    free(inv_pattern_cc);
-    free(fc);
 }

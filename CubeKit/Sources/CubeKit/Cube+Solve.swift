@@ -16,7 +16,7 @@ private actor CubeSolverCache {
     func prepare() {
         guard !hasCreatedCache else { return }
         hasCreatedCache = true
-        initPruning(nil)
+        cube_setup()
     }
 }
 
@@ -33,9 +33,10 @@ extension Cube {
 
         guard let rawMoves = await withCheckedContinuation({ continuation in
             Self.solveQueue.async {
-                let facelets = strdup(facelets().description)
-                let result = CCubeKit.solution(facelets, Int32(maxDepth), Int(timeout.rounded(.up)), 0, nil)
-                free(facelets)
+                var cubies = self.cubies()
+                let rawCube = cube_new(&cubies.cp, &cubies.co, &cubies.ep, &cubies.eo)
+                let result = cube_solve(rawCube, Int32(maxDepth), Int(timeout.rounded(.up)), 0)
+                cube_free(rawCube)
                 continuation.resume(returning: result)
             }
         }) else { throw CubeSolverError.solveFailed }

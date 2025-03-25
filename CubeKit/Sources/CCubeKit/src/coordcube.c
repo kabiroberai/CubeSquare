@@ -1,5 +1,4 @@
 #include <sys/types.h>
-#include <stdio.h>
 #include "coordcube.h"
 #include "cubiecube.h"
 
@@ -36,16 +35,11 @@ coordcube_t* get_coordcube(cubiecube_t* cubiecube)
     return result;
 }
 
-// disable caching
-#define check_cached_table(...) 1
-#define dump_to_file(...)
-
-void initPruning(const char *cache_dir)
-{
+void cube_setup() {
     cubiecube_t* a;
     cubiecube_t* moveCube = get_moveCube();
 
-    if(check_cached_table("twistMove", (void*) twistMove, sizeof(twistMove), cache_dir) != 0) {
+    {
         short i;
         int k, j;
         a = get_cubiecube();
@@ -60,10 +54,9 @@ void initPruning(const char *cache_dir)
             }
         }
         free(a);
-        dump_to_file((void*) twistMove, sizeof(twistMove), "twistMove", cache_dir);
     }
 
-    if(check_cached_table("flipMove", (void*) flipMove, sizeof(flipMove), cache_dir) != 0) {
+    {
         short i;
         int k, j;
         a = get_cubiecube();
@@ -78,10 +71,9 @@ void initPruning(const char *cache_dir)
             }
         }
         free(a);
-        dump_to_file((void*) flipMove, sizeof(flipMove), "flipMove", cache_dir);
     }
 
-    if(check_cached_table("FRtoBR_Move", (void*) FRtoBR_Move, sizeof(FRtoBR_Move), cache_dir) != 0) {
+    {
         short i;
         int k, j;
         a = get_cubiecube();
@@ -96,10 +88,9 @@ void initPruning(const char *cache_dir)
             }
         }
         free(a);
-        dump_to_file((void*) FRtoBR_Move, sizeof(FRtoBR_Move), "FRtoBR_Move", cache_dir);
     }
 
-    if(check_cached_table("URFtoDLF_Move", (void*) URFtoDLF_Move, sizeof(URFtoDLF_Move), cache_dir) != 0) {
+    {
         short i;
         int k, j;
         a = get_cubiecube();
@@ -114,10 +105,9 @@ void initPruning(const char *cache_dir)
             }
         }
         free(a);
-        dump_to_file((void*) URFtoDLF_Move, sizeof(URFtoDLF_Move), "URFtoDLF_Move", cache_dir);
     }
 
-    if(check_cached_table("URtoDF_Move", (void*) URtoDF_Move, sizeof(URtoDF_Move), cache_dir) != 0) {
+    {
         short i;
         int k, j;
         a = get_cubiecube();
@@ -134,10 +124,9 @@ void initPruning(const char *cache_dir)
             }
         }
         free(a);
-        dump_to_file((void*) URtoDF_Move, sizeof(URtoDF_Move), "URtoDF_Move", cache_dir);
     }
 
-    if(check_cached_table("URtoUL_Move", (void*) URtoUL_Move, sizeof(URtoUL_Move), cache_dir) != 0) {
+    {
         short i;
         int k, j;
         a = get_cubiecube();
@@ -152,10 +141,9 @@ void initPruning(const char *cache_dir)
             }
         }
         free(a);
-        dump_to_file((void*) URtoUL_Move, sizeof(URtoUL_Move), "URtoUL_Move", cache_dir);
     }
 
-    if(check_cached_table("UBtoDF_Move", (void*) UBtoDF_Move, sizeof(UBtoDF_Move), cache_dir) != 0) {
+    {
         short i;
         int k, j;
         a = get_cubiecube();
@@ -170,10 +158,9 @@ void initPruning(const char *cache_dir)
             }
         }
         free(a);
-        dump_to_file((void*) UBtoDF_Move, sizeof(UBtoDF_Move), "UBtoDF_Move", cache_dir);
     }
 
-    if(check_cached_table("MergeURtoULandUBtoDF", (void*) MergeURtoULandUBtoDF, sizeof(MergeURtoULandUBtoDF), cache_dir) != 0) {
+    {
         // for i, j <336 the six edges UR,UF,UL,UB,DR,DF are not in the
         // UD-slice and the index is <20160
         short uRtoUL, uBtoDF;
@@ -182,10 +169,9 @@ void initPruning(const char *cache_dir)
                 MergeURtoULandUBtoDF[uRtoUL][uBtoDF] = (short) getURtoDF_standalone(uRtoUL, uBtoDF);
             }
         }
-        dump_to_file((void*) MergeURtoULandUBtoDF, sizeof(MergeURtoULandUBtoDF), "MergeURtoULandUBtoDF", cache_dir);
     }
 
-    if(check_cached_table("Slice_URFtoDLF_Parity_Prun", (void*) Slice_URFtoDLF_Parity_Prun, sizeof(Slice_URFtoDLF_Parity_Prun), cache_dir) != 0) {
+    {
         int depth = 0, done = 1;
         int i, j;
         for (i = 0; i < N_SLICE2 * N_URFtoDLF * N_PARITY / 2; i++)
@@ -228,12 +214,9 @@ void initPruning(const char *cache_dir)
             }
             depth++;
         }
-        // printf("2\n");
-        dump_to_file((void*) Slice_URFtoDLF_Parity_Prun, sizeof(Slice_URFtoDLF_Parity_Prun), "Slice_URFtoDLF_Parity_Prun", cache_dir);
-        // printf("3\n");
     }
 
-    if(check_cached_table("Slice_URtoDF_Parity_Prun", (void*) Slice_URtoDF_Parity_Prun, sizeof(Slice_URtoDF_Parity_Prun), cache_dir) != 0) {
+    {
         int depth = 0, done = 1;
         int i, j;
         for (i = 0; i < N_SLICE2 * N_URtoDF * N_PARITY / 2; i++)
@@ -274,10 +257,9 @@ void initPruning(const char *cache_dir)
             }
             depth++;
         }
-        dump_to_file((void*) Slice_URtoDF_Parity_Prun, sizeof(Slice_URtoDF_Parity_Prun), "Slice_URtoDF_Parity_Prun", cache_dir);
     }
 
-    if(check_cached_table("Slice_Twist_Prun", (void*) Slice_Twist_Prun, sizeof(Slice_Twist_Prun), cache_dir) != 0) {
+    {
         int depth = 0, done = 1;
         int i, j;
         for (i = 0; i < N_SLICE1 * N_TWIST / 2 + 1; i++)
@@ -299,10 +281,9 @@ void initPruning(const char *cache_dir)
             }
             depth++;
         }
-        dump_to_file((void*) Slice_Twist_Prun, sizeof(Slice_Twist_Prun), "Slice_Twist_Prun", cache_dir);
     }
 
-    if(check_cached_table("Slice_Flip_Prun", (void*) Slice_Flip_Prun, sizeof(Slice_Flip_Prun), cache_dir) != 0) {
+    {
         int depth = 0, done = 1;
         int i, j;
         for (i = 0; i < N_SLICE1 * N_FLIP / 2; i++)
@@ -324,7 +305,6 @@ void initPruning(const char *cache_dir)
             }
             depth++;
         }
-        dump_to_file((void*) Slice_Flip_Prun, sizeof(Slice_Flip_Prun), "Slice_Flip_Prun", cache_dir);
     }
 }
 

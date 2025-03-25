@@ -268,7 +268,7 @@ struct GANGen2Serializer: GANSerializer {
             // GAN uses Kociemba's representation, and so does our Cube type,
             // so this is more or less a 1:1 mapping.
 
-            guard let cube = Cube(cp: cp, co: co, ep: ep, eo: eo)
+            guard let cube = Cube(cubies: .init(cp: cp, co: co, ep: ep, eo: eo))
                   else { break switchKind }
 
             events.append(.facelets(cube, serial: serial))
@@ -298,31 +298,6 @@ struct GANGen2Serializer: GANSerializer {
             break
         }
         return events.map { .init(localTime: now, event: $0) }
-    }
-}
-
-extension Cube {
-    init?(
-        cp: [UInt8],
-        co: [UInt8],
-        ep: [UInt8],
-        eo: [UInt8]
-    ) {
-        self.init()
-
-        for (corner, (permutation, orientation)) in zip(CornerLocation.allCases, zip(cp, co)) {
-            guard let cornerLocation = CornerLocation(rawValue: Int(permutation)),
-                  let cornerOrientation = CornerPiece.Orientation(rawValue: Int(orientation))
-                  else { return nil }
-            corners[corner] = CornerPiece(cornerLocation, orientation: cornerOrientation)
-        }
-
-        for (edge, (permutation, orientation)) in zip(EdgeLocation.allCases, zip(ep, eo)) {
-            guard let edgeLocation = EdgeLocation(rawValue: Int(permutation)),
-                  let edgeOrientation = EdgePiece.Orientation(rawValue: Int(orientation))
-                  else { return nil }
-            edges[edge] = EdgePiece(edgeLocation, orientation: edgeOrientation)
-        }
     }
 }
 
