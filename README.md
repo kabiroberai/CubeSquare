@@ -18,3 +18,14 @@ CubeSquare is currently primarily built for visionOS and smart cubes like the [G
 4. Run `make` to generate and open the Xcode project.
 
 After this, you can build and run the Xcode project as usual.
+
+## Thanks
+
+This project would not have been possible without several amazing resources:
+
+- [Socratica](https://www.socratica.info), a wonderful coworking collective at the University of Waterloo where I built much of this project
+- Herbert Kociemba's [Two-Phase Algorithm](https://kociemba.org/cube.htm) for solving the Rubik's Cube.
+- Maxim Tsoy's [C port](https://github.com/muodov/kociemba) of Kociemba's algorithm.
+- Javi Soto's [RubikSwift](https://github.com/JaviSoto/RubikSwift) package that served as a starting point for CubeKit.
+- Andy Fedotov's [gan-web-bluetooth](https://github.com/afedotov/gan-web-bluetooth) which was the basis of the CoreBluetooth code for interacting with GAN cubes.
+- Ludovic Fernandez's [cube.js](https://github.com/ldez/cubejs) which was helpful for understanding the more intricate aspects of modelling the cube, such as generating uniform scrambles.
