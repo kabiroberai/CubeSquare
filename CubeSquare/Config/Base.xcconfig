@@ -1,0 +1,4 @@
+CODE_SIGN_ENTITLEMENTS = CubeSquare/CubeSquare.entitlements
+GENERATE_INFOPLIST_FILE = YES
+
+#include? "Private.xcconfig"

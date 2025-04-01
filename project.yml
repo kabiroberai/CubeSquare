@@ -1,0 +1,23 @@
+name: CubeSquare
+options:
+  minimumXcodeGenVersion: 2.10
+  deploymentTarget: 
+    iOS: "18.0"
+    macOS: "15.0"
+    visionOS: "2.0"
+  bundleIdPrefix: com.kabiroberai
+targets:
+  CubeSquare:
+    type: application
+    supportedDestinations: [iOS, macOS, visionOS]
+    sources:
+      - path: CubeSquare
+    dependencies:
+      - package: CubeKit
+    configFiles:
+      Debug: CubeSquare/Config/Debug.xcconfig
+      Release: CubeSquare/Config/Release.xcconfig
+packages:
+  CubeKit:
+    path: CubeKit
+    group: ""

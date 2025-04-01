@@ -31,26 +31,22 @@ import Testing
 }
 
 @Test func solvedFaceletsCube() async throws {
-    let facelets = GANFacelets(
+    let cube = Cube(cubies: .init(
         cp: [0, 1, 2, 3, 4, 5, 6, 7],
         co: [0, 0, 0, 0, 0, 0, 0, 0],
         ep: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-        eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        serial: 0
-    )
-    let cube = facelets.cube()
+        eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ))
     #expect(cube == Cube())
 }
 
 @Test func turnedFaceletsCube() async throws {
-    let facelets = GANFacelets(
+    let cubeState = Cube(cubies: .init(
         cp: [0, 5, 2, 1, 7, 4, 6, 3],
         co: [1, 2, 0, 2, 1, 1, 0, 2],
         ep: [1, 9, 2, 3, 11, 8, 6, 7, 4, 5, 10, 0],
-        eo: [1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
-        serial: 0
-    )
-    let cubeState = facelets.cube()
+        eo: [1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0]
+    ))
 
     let fr = Cube().applying([Move(face: .front), Move(face: .right)])
     #expect(cubeState == fr)
@@ -92,10 +88,11 @@ import Testing
     for move in ["U", "F", "R2", "B'", "D2", "L"] {
         cube.apply(Move(move)!)
     }
-    #expect(cube.corners.all.map(\.location.rawValue) == [7, 6, 2, 1, 0, 5, 3, 4])
-    #expect(cube.corners.all.map(\.orientation.rawValue) == [0, 2, 2, 2, 0, 1, 1, 1])
-    #expect(cube.edges.all.map(\.location.rawValue) == [4, 9, 7, 10, 6, 0, 5, 8, 11, 1, 3, 2])
-    #expect(cube.edges.all.map(\.orientation.rawValue) == [0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1])
+    let cubies = cube.cubies()
+    #expect(cubies.cp == [7, 6, 2, 1, 0, 5, 3, 4])
+    #expect(cubies.co == [0, 2, 2, 2, 0, 1, 1, 1])
+    #expect(cubies.ep == [4, 9, 7, 10, 6, 0, 5, 8, 11, 1, 3, 2])
+    #expect(cubies.eo == [0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1])
     #expect(cube.facelets().description == "LLFBUDBLDRRURRUFLDLFBUFBLRRFUUFDDRRRBDDBLFBDDLBULBUFFU")
 
     let reconstructed = try Cube(facelets: .init("LLFBUDBLDRRURRUFLDLFBUFBLRRFUUFDDRRRBDDBLFBDDLBULBUFFU")!)
