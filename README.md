@@ -4,6 +4,8 @@ Your one stop shop for twisty puzzles on Apple platforms.
 
 See [this tweet](https://x.com/kabiroberai/status/1902151939497873548) for a live demo!
 
+![Screenshot](Assets/Screenshot.png?raw=true "Screenshot")
+
 ## About
 
 CubeSquare is currently primarily built for visionOS and smart cubes like the [Gan12 UI Freeplay](https://www.gancube.com/products/gan12-ui-freeplay-3x3-flagship-speed-cube). Improved support for other platforms and (non-smart / smart) cubes may or may not come in the future.
