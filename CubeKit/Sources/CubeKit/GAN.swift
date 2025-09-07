@@ -12,9 +12,13 @@ enum GANConstants {}
 extension GANConstants {
     static let gen2Service: BluetoothUUID = "6e400001-b5a3-f393-e0a9-e50e24dc4179"
     static let gen3Service: BluetoothUUID = "8653000a-43e6-47b7-9cb0-5fc21d4ae340"
+    static let gen4Service: BluetoothUUID = "00000010-0000-fff7-fff6-fff5fff4fff0"
 
     static let gen2CommandCharacteristic: BluetoothUUID = "28be4a4a-cd67-11e9-a32f-2a2ae2dbcce4"
     static let gen2StateCharacteristic: BluetoothUUID = "28be4cb6-cd67-11e9-a32f-2a2ae2dbcce4"
+
+    static let gen4CommandCharacteristic: BluetoothUUID = "fff5"
+    static let gen4StateCharacteristic: BluetoothUUID = "fff6"
 
     // GAN Gen2, Gen3
     static let ganKey1: [UInt8] = [0x01, 0x02, 0x42, 0x28, 0x31, 0x91, 0x16, 0x07, 0x20, 0x05, 0x18, 0x54, 0x42, 0x11, 0x12, 0x53]
@@ -100,7 +104,7 @@ struct GANCubeEvent {
 
 protocol GANSerializer {
     func encode(_ command: GANCubeCommand) -> [UInt8]
-    func decode(_ event: [UInt8]) throws -> [GANCubeEvent]
+    mutating func decode(_ event: [UInt8]) throws -> [GANCubeEvent]
 }
 
 extension RandomAccessCollection<UInt8> {
@@ -301,6 +305,154 @@ struct GANGen2Serializer: GANSerializer {
     }
 }
 
+struct GANGen4Serializer: GANSerializer {
+    func encode(_ command: GANCubeCommand) -> [UInt8] {
+        var bytes = [UInt8](repeating: 0, count: 20)
+        switch command {
+        case .requestFacelets:
+            bytes[0..<6] = [0xDD, 0x04, 0x00, 0xED, 0x00, 0x00]
+        case .requestHardware:
+            bytes[0..<5] = [0xDF, 0x03, 0x00, 0x00, 0x00]
+        case .requestBattery:
+            bytes[0..<6] = [0xDD, 0x04, 0x00, 0xEF, 0x00, 0x00]
+        case .reset:
+            bytes[0..<16] = [0xD2, 0x0D, 0x05, 0x39, 0x77, 0x00, 0x00, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0x00, 0x00, 0x00]
+        }
+        return bytes
+    }
+
+    mutating func decode(_ event: [UInt8]) throws -> [GANCubeEvent] {
+        let now = Date()
+        let kind = event.readU8(bitOffset: 0, bitCount: 8)
+        let dataLength = event.readU8(bitOffset: 8, bitCount: 8)
+        var events: [GANCubeEvent.Event] = []
+        switchKind: switch kind {
+        case 0x01: // MOVE
+            // let cubeTimestamp = event.readU32(bitOffset: 16).byteSwapped
+            let serial = UInt8(event.readU32(bitOffset: 48).byteSwapped % 0xFF)
+
+            let magnitudeMap: [UInt8: Move.Magnitude] = [
+                0: .clockwiseQuarterTurn, 1: .counterClockwiseQuarterTurn
+            ]
+            let rawMagnitude = event.readU8(bitOffset: 64, bitCount: 2)
+            let magnitude = magnitudeMap[rawMagnitude]
+
+            let faceMap: [UInt8: Face] = [
+                2: .top, 32: .right, 8: .front, 1: .bottom, 16: .left, 4: .back
+            ]
+            let rawFace = event.readU8(bitOffset: 66, bitCount: 6)
+            let face = faceMap[rawFace]
+
+            if let face, let magnitude {
+                let move = Move(face: face, magnitude: magnitude)
+                events.append(.move([move], serial: serial))
+            }
+        case 0xED: // FACELETS
+            let serial = UInt8(event.readU16(bitOffset: 16).byteSwapped % 0xFF)
+
+            var cp: [UInt8] = []
+            var co: [UInt8] = []
+            var ep: [UInt8] = []
+            var eo: [UInt8] = []
+
+            // corners
+            for i in 0..<7 {
+                cp.append(event.readU8(bitOffset: 32 + i * 3, bitCount: 3))
+                co.append(event.readU8(bitOffset: 53 + i * 2, bitCount: 2))
+            }
+            cp.append(28 - cp.sum())
+            co.append((3 - (co.sum() % 3)) % 3)
+
+            // edges
+            for i in 0..<11 {
+                ep.append(event.readU8(bitOffset: 69 + i * 4, bitCount: 4))
+                eo.append(event.readU8(bitOffset: 113 + i * 1, bitCount: 1))
+            }
+            ep.append(66 - ep.sum())
+            eo.append((2 - (eo.sum() % 2)) % 2)
+
+            // GAN uses Kociemba's representation, and so does our Cube type,
+            // so this is more or less a 1:1 mapping.
+
+            guard let cube = Cube(cubies: .init(cp: cp, co: co, ep: ep, eo: eo))
+                  else { break switchKind }
+
+            events.append(.facelets(cube, serial: serial))
+        case 0xFA...0xFE: // HARDWARE
+            if kind == 0xFA {
+                events.append(.hardware(.init(
+                    hardwareName: "TODO",
+                    softwareVersion: "1.0",
+                    hardwareVersion: "1.0",
+                    supportsGyroscope: true
+                )))
+            }
+            /*
+            let hwMajor = event.readU8(bitOffset: 8)
+            let hwMinor = event.readU8(bitOffset: 16)
+            let swMajor = event.readU8(bitOffset: 24)
+            let swMinor = event.readU8(bitOffset: 32)
+            let supportsGyroscope = event.readU8(bitOffset: 104, bitCount: 1) == 1
+            let hardwareName = String(
+                decoding: (0..<8).map {
+                    event.readU8(bitOffset: 40 + $0 * 8)
+                },
+                as: UTF8.self
+            )
+
+            events.append(.hardware(.init(
+                hardwareName: hardwareName,
+                softwareVersion: "\(swMajor).\(swMinor)",
+                hardwareVersion: "\(hwMajor).\(hwMinor)",
+                supportsGyroscope: supportsGyroscope
+            )))
+             */
+        case 0xEC: // GYRO
+            let qw = event.readU16(bitOffset: 16)
+            let qx = event.readU16(bitOffset: 32)
+            let qy = event.readU16(bitOffset: 48)
+            let qz = event.readU16(bitOffset: 64)
+
+            let vx = event.readU8(bitOffset: 80, bitCount: 4)
+            let vy = event.readU8(bitOffset: 84, bitCount: 4)
+            let vz = event.readU8(bitOffset: 88, bitCount: 4)
+
+            func parseU16(_ value: UInt16) -> Double {
+                let sign: Double = ((value >> 15) & 1) == 1 ? -1 : 1
+                let magnitude = Double(value & 0x7FFF)
+                return sign * magnitude / Double(0x7FFF)
+            }
+
+            func parseU4(_ value: UInt8) -> Double {
+                let sign: Double = ((value >> 3) & 1) == 1 ? -1 : 1
+                let magnitude = Double(value & 0x7)
+                return sign * magnitude
+            }
+
+            events.append(.gyro(GANGyroData(
+                orientation: .init(
+                    x: parseU16(qx),
+                    y: parseU16(qy),
+                    z: parseU16(qz),
+                    w: parseU16(qw)
+                ),
+                angularVelocity: .init(
+                    x: parseU4(vx),
+                    y: parseU4(vy),
+                    z: parseU4(vz)
+                )
+            )))
+        case 0xEF: // BATTERY
+            let level = event.readU8(bitOffset: 8 + Int(dataLength) * 8)
+            events.append(.battery(level: Int(min(level, 100))))
+        default:
+            print("UNKNOWN EVENT: \(kind)")
+            break
+        }
+        return events.map { .init(localTime: now, event: $0) }
+    }
+}
+
 struct GANCommonCryptor: GANCryptor {
     var key: SymmetricKey
     var iv: AES._CBC.IV
@@ -365,13 +517,13 @@ struct GANCommonCryptor: GANCryptor {
 
 public final class GANCube {
     let cubeManager: GANCubeManager
-    let serializer: any GANSerializer
+    var serializer: any GANSerializer
     let cryptor: any GANCryptor
     let service: CBService
     let commandCharacteristic: CBCharacteristic
     let stateCharacteristic: CBCharacteristic
 
-    private let cancellable: AnyCancellable
+    private var cancellable: AnyCancellable?
     private let _events = PassthroughSubject<GANCubeEvent, Never>()
     private var events: some Publisher<GANCubeEvent, Never> { _events }
 
@@ -391,8 +543,9 @@ public final class GANCube {
         self.stateCharacteristic = stateCharacteristic
 
         let stateUUID = stateCharacteristic.uuid.bluetoothUUID
+        cancellable = nil
         cancellable = cubeManager.peripheralDelegate.events
-            .compactMap { [cryptor, serializer] event -> [GANCubeEvent] in
+            .compactMap { [cryptor] event -> [GANCubeEvent] in
                 guard case let .updatedCharacteristic(characteristic, error) = event,
                       characteristic.uuid.bluetoothUUID == stateUUID,
                       error == nil,
@@ -400,7 +553,7 @@ public final class GANCube {
                       else { return [] }
                 var bytes = [UInt8](value)
                 guard (try? cryptor.decrypt(&bytes)) != nil else { return [] }
-                guard let decoded = try? serializer.decode(bytes) else { return [] }
+                guard let decoded = try? self.serializer.decode(bytes) else { return [] }
                 return decoded
             }
             .flatMap { $0.publisher }
@@ -506,7 +659,28 @@ public final class GANCubeManager {
             services.map { ($0.uuid.bluetoothUUID, $0) },
             uniquingKeysWith: { $1 }
         )
-        if let gen3Service = serviceByUUID[GANConstants.gen3Service] {
+        if let gen4Service = serviceByUUID[GANConstants.gen4Service] {
+            async let commandCharacteristic = characteristic(
+                uuid: GANConstants.gen4CommandCharacteristic,
+                for: gen4Service
+            )
+            async let stateCharacteristic = characteristic(
+                uuid: GANConstants.gen4StateCharacteristic,
+                for: gen4Service
+            )
+            return try await GANCube(
+                cubeManager: self,
+                serializer: GANGen4Serializer(),
+                cryptor: GANCommonCryptor(
+                    key: GANConstants.ganKey1,
+                    iv: GANConstants.ganIV1,
+                    salt: macAddress.reversed()
+                ),
+                service: gen4Service,
+                commandCharacteristic: commandCharacteristic,
+                stateCharacteristic: stateCharacteristic
+            )
+        } else if let gen3Service = serviceByUUID[GANConstants.gen3Service] {
             _ = gen3Service
             // FIXME: support gen3
             throw Errors.gen3Unsupported
